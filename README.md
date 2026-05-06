@@ -16,3 +16,26 @@ Homebridge v2 compatible maintenance fork of `homebridge-cbus` for Clipsal C-Bus
 
 ```bash
 npm install github:pktechnology-code/homebridge-cbus-plugin
+```
+
+Or replace the existing `homebridge-cbus` folder manually for local testing.
+
+## Configuration
+
+Existing configurations should continue to work:
+
+```json
+{
+  "platform": "homebridge-cbus.CBus"
+}
+```
+
+## Status
+
+This is a Homebridge v2 compatibility fork. It resolves startup failures seen in Homebridge v2 environments.
+
+Further testing across different C-Bus accessory types is recommended before publishing to npm.
+
+## Credits
+
+Based on the original `homebridge-cbus` plugin by Anthony Webb.
