@@ -23,9 +23,9 @@
     "homekit"
   ],
   "engines": {
-  "node": ">=18.0.0",
-  "homebridge": ">=2.0.0"
-},
+    "node": ">=18.0.0",
+    "homebridge": ">=2.0.0"
+  },
   "dependencies": {
     "bytes": "^2.4.0",
     "carrier": "^0.3.0",
@@ -44,6 +44,8 @@
   },
   "homebridge": {
     "pluginAlias": "CBus",
-    "pluginType": "platform"
+    "pluginType": "platform",
+    "brandColor": "#6f42c1",
+    "icon": "home-automation"
   }
 }
