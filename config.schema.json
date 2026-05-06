@@ -1,0 +1,137 @@
+{
+  "pluginAlias": "CBus",
+  "pluginType": "platform",
+  "singular": true,
+  "schema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "title": "Name",
+        "type": "string",
+        "default": "Clipsal C-Gate"
+      },
+      "client_ip_address": {
+        "title": "C-Gate Host",
+        "type": "string",
+        "default": "127.0.0.1",
+        "required": true,
+        "description": "IP address or host name of the C-Gate server. Use 127.0.0.1 when C-Gate runs on the same machine as Homebridge."
+      },
+      "client_controlport": {
+        "title": "C-Gate Control Port",
+        "type": "integer",
+        "default": 20023,
+        "required": true
+      },
+      "client_cbusname": {
+        "title": "C-Bus Project Name",
+        "type": "string",
+        "required": true,
+        "description": "The C-Gate project name, for example OGILVY."
+      },
+      "client_network": {
+        "title": "C-Bus Network",
+        "type": "integer",
+        "default": 254,
+        "required": true
+      },
+      "client_application": {
+        "title": "C-Bus Application",
+        "type": "integer",
+        "default": 56,
+        "required": true
+      },
+      "client_debug": {
+        "title": "Enable C-Gate Debug Logging",
+        "type": "boolean",
+        "default": false
+      },
+      "platform_export": {
+        "title": "Platform Export Path",
+        "type": "string",
+        "description": "Optional path to export generated platform JSON. Leave blank unless required."
+      },
+      "database_export": {
+        "title": "Database Export Path",
+        "type": "string",
+        "description": "Optional path to export C-Gate database JSON. Leave blank unless required."
+      },
+      "accessories": {
+        "title": "Accessories",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "title": "Type",
+              "type": "string",
+              "oneOf": [
+                { "title": "Light", "enum": ["light"] },
+                { "title": "Dimmer", "enum": ["dimmer"] },
+                { "title": "Switch", "enum": ["switch"] },
+                { "title": "Fan", "enum": ["fan"] },
+                { "title": "Motion", "enum": ["motion"] },
+                { "title": "Security", "enum": ["security"] },
+                { "title": "Shutter", "enum": ["shutter"] },
+                { "title": "Trigger", "enum": ["trigger"] },
+                { "title": "Smoke", "enum": ["smoke"] },
+                { "title": "Contact", "enum": ["contact"] },
+                { "title": "Temperature", "enum": ["temperature"] }
+              ],
+              "required": true
+            },
+            "id": {
+              "title": "Group Address / ID",
+              "type": "string",
+              "required": true
+            },
+            "name": {
+              "title": "Accessory Name",
+              "type": "string",
+              "required": true
+            },
+            "enabled": {
+              "title": "Enabled",
+              "type": "boolean",
+              "default": true
+            },
+            "network": {
+              "title": "Network Override",
+              "type": "integer"
+            },
+            "application": {
+              "title": "Application Override",
+              "type": "integer"
+            },
+            "channel": {
+              "title": "Channel",
+              "type": "integer"
+            },
+            "rampDuration": {
+              "title": "Ramp Duration",
+              "type": "string",
+              "description": "Optional dimmer ramp time, e.g. 1s, 500ms, 2m."
+            },
+            "activeDuration": {
+              "title": "Active Duration",
+              "type": "string",
+              "description": "Optional switch/trigger duration, e.g. 1 sec."
+            }
+          }
+        },
+        "default": []
+      }
+    }
+  },
+  "layout": [
+    { "key": "name" },
+    { "key": "client_ip_address" },
+    { "key": "client_controlport" },
+    { "key": "client_cbusname" },
+    { "key": "client_network" },
+    { "key": "client_application" },
+    { "key": "client_debug" },
+    { "key": "accessories" },
+    { "type": "advanced", "items": ["platform_export", "database_export"] }
+  ]
+}
