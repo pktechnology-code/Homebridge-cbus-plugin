@@ -1,0 +1,48 @@
+{
+  "name": "homebridge-cbus-v2",
+  "version": "2.0.0-beta.1",
+  "description": "Homebridge v2 compatible C-Bus / Clipsal C-Gate platform plugin",
+  "main": "index.js",
+  "license": "MIT",
+  "homepage": "https://github.com/meraki/homebridge-cbus-v2",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/meraki/homebridge-cbus-v2.git"
+  },
+  "bugs": {
+    "url": "https://github.com/meraki/homebridge-cbus-v2/issues"
+  },
+  "keywords": [
+    "homebridge-plugin",
+    "homebridge",
+    "homebridge-v2",
+    "cbus",
+    "clipsal",
+    "cgate",
+    "homekit"
+  ],
+  "engines": {
+    "node": ">=18.15.0",
+    "homebridge": ">=2.0.0"
+  },
+  "dependencies": {
+    "bytes": "^2.4.0",
+    "carrier": "^0.3.0",
+    "chalk": "^1.1.3",
+    "commander": "^2.9.0",
+    "debug": ">=2.4.0",
+    "json-stable-stringify": "^1.0.1",
+    "lodash": "^4.17.21",
+    "moment": "^2.29.4",
+    "ms": "^2.1.3",
+    "xml2js": "^0.6.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "node -c index.js && find accessories lib -name '*.js' -print0 | xargs -0 -n1 node -c"
+  },
+  "homebridge": {
+    "pluginAlias": "CBus",
+    "pluginType": "platform"
+  }
+}
