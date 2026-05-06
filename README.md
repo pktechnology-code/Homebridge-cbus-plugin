@@ -15,4 +15,25 @@ Homebridge v2 compatible maintenance fork of `homebridge-cbus` for Clipsal C-Bus
 ## Install from GitHub
 
 ```bash
-npm install github:pktechnology-code/Homebridge-cbus-plugin
+npm install github:pktechnology-code/homebridge-cbus-plugin
+
+## Configuration
+
+Existing configurations should continue to work:
+
+```json
+{
+  "platform": "homebridge-cbus.CBus"
+}
+
+
+---
+
+### 3. Add “Credits”
+
+Add at bottom:
+
+```md
+## Credits
+
+Based on the original `homebridge-cbus` plugin by Anthony Webb.
