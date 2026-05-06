@@ -1,3 +1,6 @@
+```md
+![Homebridge](https://img.shields.io/badge/Homebridge-2.x-blue)
+
 # homebridge-cbus-v2
 
 Homebridge v2 compatible maintenance fork of `homebridge-cbus` for Clipsal C-Bus / C-Gate.
@@ -10,13 +13,10 @@ Homebridge v2 compatible maintenance fork of `homebridge-cbus` for Clipsal C-Bus
 - Added `config.schema.json` so Homebridge UI can render plugin configuration.
 - Cleaned package for sharing by excluding Homebridge caches, auth, backups, logs, and installed `node_modules`.
 
-## Install from local ZIP / folder
-
-Copy this plugin folder to the Homebridge machine and install it from the folder:
+## Install from GitHub
 
 ```bash
-cd /volume1/homebridge
-npm install /path/to/homebridge-cbus-v2
+npm install github:pktechnology-code/Homebridge-cbus-plugin
 ```
 
 Or replace the existing `homebridge-cbus` folder manually for local testing.
@@ -32,7 +32,7 @@ Existing platform configs should continue to use:
 If installing this as the renamed package `homebridge-cbus-v2`, use:
 
 ```json
-"platform": "CBus"
+"platform": "homebridge-cbus.CBus"
 ```
 
 ## Status
