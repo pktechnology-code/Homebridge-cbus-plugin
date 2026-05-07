@@ -27,7 +27,7 @@
         "title": "C-Bus Project Name",
         "type": "string",
         "required": true,
-        "description": "The C-Gate project name, for example OGILVY."
+        "description": "The C-Gate project name, for example MyHouse."
       },
       "client_network": {
         "title": "C-Bus Network",
