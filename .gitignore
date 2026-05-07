@@ -1,0 +1,11 @@
+﻿node_modules/
+npm-debug.log
+*.log
+.DS_Store
+.env
+homebridge/
+persist/
+accessories/
+npm-cache/
+npm-global/
+@eaDir/
