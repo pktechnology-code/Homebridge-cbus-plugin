@@ -93,13 +93,14 @@
         "default": "",
         "description": "Optional path for the discovery cache JSON file."
       },
-
       "discoveredAccessories": {
         "title": "Discovered Accessories",
         "type": "array",
+        "expandable": true,
         "description": "Select discovered C-Bus groups to expose to HomeKit.",
         "items": {
           "type": "object",
+          "title": "Discovered Accessory",
           "properties": {
             "enabled": {
               "title": "Enabled",
@@ -133,29 +134,38 @@
                 { "title": "Contact", "enum": ["contact"] },
                 { "title": "Temperature", "enum": ["temperature"] }
               ]
+            },
+            "activeDuration": {
+              "title": "Active Duration",
+              "type": "string",
+              "description": "Optional switch/trigger duration, e.g. 1 sec."
+            },
+            "rampDuration": {
+              "title": "Ramp Duration",
+              "type": "string",
+              "description": "Optional dimmer ramp time, e.g. 1s, 500ms, 2m."
             }
           }
         },
         "default": []
       },
-
       "platform_export": {
         "title": "Platform Export Path",
         "type": "string",
         "description": "Optional path to export generated platform JSON."
       },
-
       "database_export": {
         "title": "Database Export Path",
         "type": "string",
         "description": "Optional path to export C-Gate database JSON."
       },
-
       "accessories": {
         "title": "Manual Accessories",
         "type": "array",
+        "expandable": true,
         "items": {
           "type": "object",
+          "title": "Manual Accessory",
           "properties": {
             "type": {
               "title": "Type",
@@ -218,7 +228,6 @@
       }
     }
   },
-
   "layout": [
     { "key": "name" },
     { "key": "client_ip_address" },
