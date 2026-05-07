@@ -42,11 +42,46 @@
         "required": true
       },
       "client_debug": {
-        "title": "Enable C-Gate Debug Logging",
-        "type": "boolean",
-        "default": false
-      },
-      "platform_export": {
+  "title": "Enable C-Gate Debug Logging",
+  "type": "boolean",
+  "default": false
+},
+"autoDiscover": {
+  "title": "Enable Auto Discovery",
+  "type": "boolean",
+  "default": false,
+  "description": "Discover C-Bus groups from C-Gate. Discovered groups are only added to HomeKit if their group IDs are listed in Include Discovered Group IDs."
+},
+"discoveryDefaultType": {
+  "title": "Default Type for Discovered Groups",
+  "type": "string",
+  "default": "light",
+  "oneOf": [
+    { "title": "Light", "enum": ["light"] },
+    { "title": "Dimmer", "enum": ["dimmer"] },
+    { "title": "Switch", "enum": ["switch"] }
+  ],
+  "description": "Accessory type used for discovered groups unless manually configured."
+},
+"includeDiscoveredGroups": {
+  "title": "Include Discovered Group IDs",
+  "type": "array",
+  "items": {
+    "type": "string"
+  },
+  "default": [],
+  "description": "Only discovered C-Bus group IDs listed here will be exposed to HomeKit, for example: 6, 71, 84."
+},
+"excludeDiscoveredGroups": {
+  "title": "Exclude Discovered Group IDs",
+  "type": "array",
+  "items": {
+    "type": "string"
+  },
+  "default": [],
+  "description": "Optional list of discovered C-Bus group IDs to ignore."
+},
+"platform_export": {
         "title": "Platform Export Path",
         "type": "string",
         "description": "Optional path to export generated platform JSON. Leave blank unless required."
@@ -131,6 +166,10 @@
     { "key": "client_network" },
     { "key": "client_application" },
     { "key": "client_debug" },
+    { "key": "autoDiscover" },
+    { "key": "discoveryDefaultType" },
+    { "key": "includeDiscoveredGroups" },
+    { "key": "excludeDiscoveredGroups" },
     { "key": "accessories" },
     { "type": "advanced", "items": ["platform_export", "database_export"] }
   ]

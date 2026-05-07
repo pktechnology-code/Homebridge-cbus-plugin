@@ -19,13 +19,11 @@ const cbusUtils = require(`./lib/cbus-utils.js`);
 // ==========================================================================================
 
 module.exports = function (homebridge) {
-	// globals
 	const Service = homebridge.hap.Service;
 	const Characteristic = homebridge.hap.Characteristic;
 	const Accessory = homebridge.hap.Accessory;
 	const uuid = homebridge.hap.uuid;
 
-	// load accessories
 	const CBusAccessory = require('./accessories/accessory.js')(Service, Characteristic, Accessory, uuid);
 	const CBusLightAccessory = require('./accessories/light-accessory.js')(Service, Characteristic, CBusAccessory, uuid);
 	const CBusDimmerAccessory = require('./accessories/dimmer-accessory.js')(Service, Characteristic, CBusLightAccessory, uuid);
@@ -35,14 +33,10 @@ module.exports = function (homebridge) {
 	const CBusFanAccessory = require('./accessories/fan-accessory.js')(Service, Characteristic, CBusAccessory, uuid);
 	const CBusSwitchAccessory = require('./accessories/switch-accessory.js')(Service, Characteristic, CBusAccessory, uuid);
 	const CBusTriggerAccessory = require('./accessories/trigger-accessory.js')(Service, Characteristic, CBusAccessory, uuid);
-  const CBusSmokeAccessory = require('./accessories/smoke-sensor-accessory.js')(Service, Characteristic, CBusAccessory, uuid);
+	const CBusSmokeAccessory = require('./accessories/smoke-sensor-accessory.js')(Service, Characteristic, CBusAccessory, uuid);
 	const CBusContactAccessory = require('./accessories/contact-accessory.js')(Service, Characteristic, CBusAccessory, uuid);
 	const CBusTemperatureAccessory = require('./accessories/temperature-accessory.js')(Service, Characteristic, CBusAccessory, uuid);
-	
-	// Homebridge v2 / modern Node compatibility:
-	// Use native prototype chains instead of the legacy cbusUtils.fixInheritance helper.
-	// The legacy helper can invoke class constructors as functions, which breaks with
-	// Homebridge v2 / modern Node because Accessory is a class.
+
 	Object.setPrototypeOf(CBusAccessory.prototype, Accessory.prototype);
 	Object.setPrototypeOf(CBusLightAccessory.prototype, CBusAccessory.prototype);
 	Object.setPrototypeOf(CBusDimmerAccessory.prototype, CBusLightAccessory.prototype);
@@ -55,11 +49,9 @@ module.exports = function (homebridge) {
 	Object.setPrototypeOf(CBusSmokeAccessory.prototype, CBusAccessory.prototype);
 	Object.setPrototypeOf(CBusContactAccessory.prototype, CBusAccessory.prototype);
 	Object.setPrototypeOf(CBusTemperatureAccessory.prototype, CBusAccessory.prototype);
-	
-	// register ourself with homebridge
+
 	homebridge.registerPlatform('homebridge-cbus', 'CBus', CBusPlatform, true);
 
-	// build the accessory definition map
 	module.exports.accessoryDefinitions = {
 		light: CBusLightAccessory,
 		dimmer: CBusDimmerAccessory,
@@ -69,7 +61,7 @@ module.exports = function (homebridge) {
 		fan: CBusFanAccessory,
 		switch: CBusSwitchAccessory,
 		trigger: CBusTriggerAccessory,
-    smoke: CBusSmokeAccessory,
+		smoke: CBusSmokeAccessory,
 		contact: CBusContactAccessory,
 		temperature: CBusTemperatureAccessory,
 	};
@@ -80,47 +72,44 @@ module.exports = function (homebridge) {
 // ==========================================================================================
 
 function CBusPlatform(ignoredLog, config) {
-	// stash vars
-	this.config = config;
+	this.config = config || {};
 
 	this.registeredAccessories = undefined;
 	this.client = undefined;
 	this.database = undefined;
 
-	// client IP and port
-	if (typeof config.client_ip_address === `undefined`) {
+	if (typeof this.config.client_ip_address === `undefined`) {
 		throw new Error('client_ip_address is required');
 	}
-	this.cgateIpAddress = config.client_ip_address;
-	this.cgateControlPort = (typeof config.client_controlport === `undefined`) ? undefined : config.client_controlport;
 
-	// project name, network and default application
+	this.cgateIpAddress = this.config.client_ip_address;
+	this.cgateControlPort = (typeof this.config.client_controlport === `undefined`) ? undefined : this.config.client_controlport;
+
 	try {
-		this.project = CBusNetId.validatedProjectName(config.client_cbusname);
+		this.project = CBusNetId.validatedProjectName(this.config.client_cbusname);
 	} catch (err) {
-		throw new Error(`illegal client_cbusname: ${config.client_cbusname}`);
+		throw new Error(`illegal client_cbusname: ${this.config.client_cbusname}`);
 	}
 
-	this.network = (typeof config.client_network === `undefined`) ? undefined : config.client_network;
-	this.application = (typeof config.client_application === `undefined`) ? undefined : config.client_application;
+	this.network = (typeof this.config.client_network === `undefined`) ? undefined : this.config.client_network;
+	this.application = (typeof this.config.client_application === `undefined`) ? undefined : this.config.client_application;
 
-	// logging
 	log.enable(true);
 
-	// if set, client_debug overrides the setting in the environment
-	if (typeof config.client_debug !== `undefined`) {
-		logClient.enable(config.client_debug);
+	if (typeof this.config.client_debug !== `undefined`) {
+		logClient.enable(this.config.client_debug);
 	}
 }
 
-// Invokes callback(accessories[])
 CBusPlatform.prototype._processEvent = function (message) {
 	if (message.netId) {
 		let output;
-		// lookup accessory
-		const accessory = this.registeredAccessories[message.netId.toString()];
+
+		const accessory = this.registeredAccessories ? this.registeredAccessories[message.netId.toString()] : undefined;
+
 		if (!message.application === 'measurement') {
 			const tag = this.database ? this.database.getTag(message.netId) : `NYI`;
+
 			if (accessory) {
 				output = `${chalk.red.bold(accessory.name)} (${accessory.type}) set to level ${message.level}%`;
 			} else {
@@ -128,21 +117,20 @@ CBusPlatform.prototype._processEvent = function (message) {
 			}
 		}
 
-		// append source info, if applicable
-		if (message.sourceUnit) {
+		if (message.sourceUnit && this.database) {
 			const sourceId = new CBusNetId(this.project, this.network, `p`, message.sourceUnit);
 			const source = this.database.getNetworkEntity(sourceId);
-            if (typeof source == 'undefined') {
-                log(`event source unit ${sourceId} not found.`);
-            } else {
-			    output = `${output}, by ${chalk.red.bold(source.tag)} (${source.unitType})`;
-            }
+
+			if (typeof source === 'undefined') {
+				log(`event source unit ${sourceId} not found.`);
+			} else {
+				output = `${output}, by ${chalk.red.bold(source.tag)} (${source.unitType})`;
+			}
 		}
+
 		logLevel(output);
 
 		if (accessory) {
-			// process if found
-			// 702 code for temperature measurement event
 			const err = (message.code !== 730 && !message.code === 702);
 			accessory.processClientData(err, message);
 		}
@@ -154,14 +142,17 @@ CBusPlatform.prototype._processEvent = function (message) {
 };
 
 CBusPlatform.prototype.accessories = function (callback) {
-	// initiate the CBus client
-	this.client = new CGateClient(this.cgateIpAddress, this.cgateControlPort,
-		this.project, this.network, this.application,
-		this.clientDebug);
+	this.client = new CGateClient(
+		this.cgateIpAddress,
+		this.cgateControlPort,
+		this.project,
+		this.network,
+		this.application,
+		this.clientDebug
+	);
 
 	this.database = new CGateDatabase(new CBusNetId(this.project));
 
-	// listen for data from the client and ensure that the homebridge UI is updated
 	this.client.on(`event`, function (message) {
 		this._processEvent(message);
 	}.bind(this));
@@ -171,62 +162,111 @@ CBusPlatform.prototype.accessories = function (callback) {
 			const stats = this.database.getStats();
 			log(`Successfully fetched ${stats.numApplications} applications, ${stats.numGroups} groups and ${stats.numUnits} units from C-Gate.`);
 
-			// export platform file if platform_export property is set
 			if (this.config.platform_export) {
 				new CGateExport(this.database).exportPlatform(this.config.platform_export, this);
 			}
 
-			// export platform file if platform_export property is set
 			if (this.config.database_export) {
 				new CGateExport(this.database).exportDatabase(this.config.database_export);
 			}
+
+			const accessories = this._createAccessories();
+
+			this.registeredAccessories = {};
+			for (const accessory of accessories) {
+				this.registeredAccessories[accessory.netId.toString()] = accessory;
+			}
+
+			log('Registering the accessories list…');
+			callback(accessories);
 		});
-
-		const accessories = this._createAccessories();
-
-		// build the lookup map
-		this.registeredAccessories = {};
-		for (const accessory of accessories) {
-			this.registeredAccessories[accessory.netId.toString()] = accessory;
-		}
-
-		// hand them back to the callback to fire them up
-		log('Registering the accessories list…');
-		callback(accessories);
 	}.bind(this));
 };
 
-// return a map of newly minted accessories
+CBusPlatform.prototype._createDiscoveredAccessoryConfigs = function () {
+	if (!this.config.autoDiscover) {
+		return [];
+	}
+
+	const includeIds = new Set((this.config.includeDiscoveredGroups || []).map(String));
+	const excludeIds = new Set((this.config.excludeDiscoveredGroups || []).map(String));
+	const defaultType = this.config.discoveryDefaultType || 'light';
+
+	if (includeIds.size === 0) {
+		log('Auto discovery enabled, but Include Discovered Group IDs is empty. No discovered groups will be exposed.');
+		return [];
+	}
+
+	if (!this.database || typeof this.database.getNetworkEntity !== 'function') {
+		log('Auto discovery skipped because C-Gate database is not available.');
+		return [];
+	}
+
+	const discovered = [];
+
+	for (const id of includeIds) {
+		if (excludeIds.has(id)) {
+			log(`Skipping discovered group ${id} because it is excluded.`);
+			continue;
+		}
+
+		const netId = new CBusNetId(
+			this.project,
+			this.network,
+			this.application,
+			id
+		);
+
+		let entity;
+		try {
+			entity = this.database.getNetworkEntity(netId);
+		} catch (err) {
+			log(`Could not read discovered group ${id}: ${err}`);
+		}
+
+		const name = entity && entity.tag ? entity.tag : `C-Bus Group ${id}`;
+
+		discovered.push({
+			type: defaultType,
+			id: String(id),
+			name: name,
+			enabled: true
+		});
+
+		log(`Auto-discovered selected group ${id}: ${name} (${defaultType})`);
+	}
+
+	return discovered;
+};
+
 CBusPlatform.prototype._createAccessories = function () {
 	log('Loading the accessories list…');
 
-	if (typeof this.config.accessories === `undefined`) {
-		throw new Error(`Your config.json file is missing the 'accessories' section for this platform. (Check spelling!)`);
-	}
-
 	const accessories = [];
 
-	for (let config of this.config.accessories) {
+	const manualAccessoryConfigs = this.config.accessories || [];
+	const discoveredAccessoryConfigs = this._createDiscoveredAccessoryConfigs();
+	const combinedAccessoryConfigs = manualAccessoryConfigs.concat(discoveredAccessoryConfigs);
 
-    // Skip empty or invalid entries (UI often creates these)
-    if (!config || !config.type || !config.id || !config.name) {
-        log(`Skipping invalid accessory config: ${JSON.stringify(config)}`);
-        continue;
-    }
+	for (let config of combinedAccessoryConfigs) {
+		if (!config || !config.type || !config.id || !config.name) {
+			log(`Skipping invalid accessory config: ${JSON.stringify(config)}`);
+			continue;
+		}
 
-    if (config.enabled === false) {
-        log(`Skipping disabled accessory '${config.name}' (${config.type})`);
-        continue;
-    }
+		if (config.enabled === false) {
+			log(`Skipping disabled accessory '${config.name}' (${config.type})`);
+			continue;
+		}
 
-    try {
-        const accessory = this.createAccessory(config);
-        accessories.push(accessory);
-    } catch (err) {
-        log(`Failed to create accessory '${config.name}' (${config.type}): ${err}`);
-        continue; // DO NOT crash Homebridge
-    }
-}
+		try {
+			const accessory = this.createAccessory(config);
+			accessories.push(accessory);
+		} catch (err) {
+			log(`Failed to create accessory '${config.name}' (${config.type}): ${err}`);
+			continue;
+		}
+	}
 
 	return accessories;
 };
