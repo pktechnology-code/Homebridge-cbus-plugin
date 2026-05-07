@@ -81,6 +81,18 @@
   "default": [],
   "description": "Optional list of discovered C-Bus group IDs to ignore."
 },
+"discoveryCacheEnabled": {
+  "title": "Write Discovery Cache on Startup",
+  "type": "boolean",
+  "default": false,
+  "description": "Writes a JSON file containing all discovered C-Bus groups from C-Gate. This does not add accessories to HomeKit."
+},
+"discoveryCachePath": {
+  "title": "Discovery Cache Output Path",
+  "type": "string",
+  "default": "",
+  "description": "Optional path for the discovery cache JSON file. Leave blank to write cbus-discovery-cache.json in the Homebridge working directory."
+},
 "platform_export": {
         "title": "Platform Export Path",
         "type": "string",
@@ -170,6 +182,8 @@
     { "key": "discoveryDefaultType" },
     { "key": "includeDiscoveredGroups" },
     { "key": "excludeDiscoveredGroups" },
+    { "key": "discoveryCacheEnabled" },
+    { "key": "discoveryCachePath" },
     { "key": "accessories" },
     { "type": "advanced", "items": ["platform_export", "database_export"] }
   ]

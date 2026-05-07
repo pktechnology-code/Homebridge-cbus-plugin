@@ -10,6 +10,7 @@ const chalk = require('chalk');
 const CGateClient = require(`./lib/cgate-client.js`);
 const CGateDatabase = require(`./lib/cgate-database.js`);
 const CGateExport = require(`./lib/cgate-export.js`);
+const DiscoveryCache = require('./lib/discovery-cache.js');
 
 const CBusNetId = require(`./lib/cbus-netid.js`);
 const cbusUtils = require(`./lib/cbus-utils.js`);
@@ -167,10 +168,19 @@ CBusPlatform.prototype.accessories = function (callback) {
 			}
 
 			if (this.config.database_export) {
-				new CGateExport(this.database).exportDatabase(this.config.database_export);
-			}
+	new CGateExport(this.database).exportDatabase(this.config.database_export);
+}
 
-			const accessories = this._createAccessories();
+if (this.config.discoveryCacheEnabled || this.config.discovery_cache_enabled) {
+	try {
+		const result = DiscoveryCache.writeDiscoveryCache(this);
+		log(`Wrote C-Bus discovery cache with ${result.totalGroups} groups to ${result.path}`);
+	} catch (err) {
+		log(`Failed to write C-Bus discovery cache: ${err}`);
+	}
+}
+
+const accessories = this._createAccessories();
 
 			this.registeredAccessories = {};
 			for (const accessory of accessories) {

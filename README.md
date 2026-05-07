@@ -32,12 +32,24 @@ Existing configurations should continue to work:
 }
 ```
 
+## Discovery Cache
+
+The plugin can export a JSON cache of all C-Bus groups found in C-Gate.
+
+This is useful when you want to see all available C-Bus group IDs and names before deciding which ones to expose to HomeKit.
+
+Enable discovery cache export in the plugin settings:
+
+```json
+{
+  "discoveryCacheEnabled": true
+}
+
+
 ## Status
 
 This is a Homebridge v2 compatibility fork. It resolves startup failures seen in Homebridge v2 environments.
 
 Further testing across different C-Bus accessory types is recommended before publishing to npm.
 
-## Credits
 
-Based on the original `homebridge-cbus` plugin by Anthony Webb.
