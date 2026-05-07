@@ -2,6 +2,7 @@
   "pluginAlias": "CBus",
   "pluginType": "platform",
   "singular": true,
+  "customUi": true,
   "schema": {
     "type": "object",
     "properties": {
@@ -14,8 +15,7 @@
         "title": "C-Gate Host",
         "type": "string",
         "default": "127.0.0.1",
-        "required": true,
-        "description": "IP address or host name of the C-Gate server. Use 127.0.0.1 when C-Gate runs on the same machine as Homebridge."
+        "required": true
       },
       "client_controlport": {
         "title": "C-Gate Control Port",
@@ -26,8 +26,7 @@
       "client_cbusname": {
         "title": "C-Bus Project Name",
         "type": "string",
-        "required": true,
-        "description": "The C-Gate project name, for example MyHouse."
+        "required": true
       },
       "client_network": {
         "title": "C-Bus Network",
@@ -49,8 +48,7 @@
       "autoDiscover": {
         "title": "Enable Auto Discovery",
         "type": "boolean",
-        "default": false,
-        "description": "Discover C-Bus groups from C-Gate."
+        "default": true
       },
       "discoveryDefaultType": {
         "title": "Default Type for Discovered Groups",
@@ -59,172 +57,27 @@
         "oneOf": [
           { "title": "Light", "enum": ["light"] },
           { "title": "Dimmer", "enum": ["dimmer"] },
-          { "title": "Switch", "enum": ["switch"] }
-        ],
-        "description": "Accessory type used for discovered groups unless manually configured."
-      },
-      "includeDiscoveredGroups": {
-        "title": "Include Discovered Group IDs",
-        "type": "array",
-        "items": {
-          "type": "string"
-        },
-        "default": [],
-        "description": "Legacy discovery inclusion list."
-      },
-      "excludeDiscoveredGroups": {
-        "title": "Exclude Discovered Group IDs",
-        "type": "array",
-        "items": {
-          "type": "string"
-        },
-        "default": [],
-        "description": "Optional list of discovered C-Bus group IDs to ignore."
+          { "title": "Switch", "enum": ["switch"] },
+          { "title": "Fan", "enum": ["fan"] }
+        ]
       },
       "discoveryCacheEnabled": {
         "title": "Write Discovery Cache on Startup",
         "type": "boolean",
-        "default": false,
-        "description": "Writes a JSON file containing all discovered C-Bus groups from C-Gate."
+        "default": true
       },
       "discoveryCachePath": {
         "title": "Discovery Cache Output Path",
         "type": "string",
-        "default": "",
-        "description": "Optional path for the discovery cache JSON file."
-      },
-      "discoveredAccessories": {
-        "title": "Discovered Accessories",
-        "type": "array",
-        "expandable": true,
-        "description": "Select discovered C-Bus groups to expose to HomeKit.",
-        "items": {
-          "type": "object",
-          "title": "Discovered Accessory",
-          "properties": {
-            "enabled": {
-              "title": "Enabled",
-              "type": "boolean",
-              "default": true
-            },
-            "id": {
-              "title": "Group Address / ID",
-              "type": "string",
-              "required": true
-            },
-            "name": {
-              "title": "Accessory Name",
-              "type": "string",
-              "required": true
-            },
-            "type": {
-              "title": "Type",
-              "type": "string",
-              "default": "light",
-              "oneOf": [
-                { "title": "Light", "enum": ["light"] },
-                { "title": "Dimmer", "enum": ["dimmer"] },
-                { "title": "Switch", "enum": ["switch"] },
-                { "title": "Fan", "enum": ["fan"] },
-                { "title": "Motion", "enum": ["motion"] },
-                { "title": "Security", "enum": ["security"] },
-                { "title": "Shutter", "enum": ["shutter"] },
-                { "title": "Trigger", "enum": ["trigger"] },
-                { "title": "Smoke", "enum": ["smoke"] },
-                { "title": "Contact", "enum": ["contact"] },
-                { "title": "Temperature", "enum": ["temperature"] }
-              ]
-            },
-            "activeDuration": {
-              "title": "Active Duration",
-              "type": "string",
-              "description": "Optional switch/trigger duration, e.g. 1 sec."
-            },
-            "rampDuration": {
-              "title": "Ramp Duration",
-              "type": "string",
-              "description": "Optional dimmer ramp time, e.g. 1s, 500ms, 2m."
-            }
-          }
-        },
-        "default": []
+        "default": "/volume1/DATA1/cbus-discovery-cache.json"
       },
       "platform_export": {
         "title": "Platform Export Path",
-        "type": "string",
-        "description": "Optional path to export generated platform JSON."
+        "type": "string"
       },
       "database_export": {
         "title": "Database Export Path",
-        "type": "string",
-        "description": "Optional path to export C-Gate database JSON."
-      },
-      "accessories": {
-        "title": "Manual Accessories",
-        "type": "array",
-        "expandable": true,
-        "items": {
-          "type": "object",
-          "title": "Manual Accessory",
-          "properties": {
-            "type": {
-              "title": "Type",
-              "type": "string",
-              "oneOf": [
-                { "title": "Light", "enum": ["light"] },
-                { "title": "Dimmer", "enum": ["dimmer"] },
-                { "title": "Switch", "enum": ["switch"] },
-                { "title": "Fan", "enum": ["fan"] },
-                { "title": "Motion", "enum": ["motion"] },
-                { "title": "Security", "enum": ["security"] },
-                { "title": "Shutter", "enum": ["shutter"] },
-                { "title": "Trigger", "enum": ["trigger"] },
-                { "title": "Smoke", "enum": ["smoke"] },
-                { "title": "Contact", "enum": ["contact"] },
-                { "title": "Temperature", "enum": ["temperature"] }
-              ],
-              "required": true
-            },
-            "id": {
-              "title": "Group Address / ID",
-              "type": "string",
-              "required": true
-            },
-            "name": {
-              "title": "Accessory Name",
-              "type": "string",
-              "required": true
-            },
-            "enabled": {
-              "title": "Enabled",
-              "type": "boolean",
-              "default": true
-            },
-            "network": {
-              "title": "Network Override",
-              "type": "integer"
-            },
-            "application": {
-              "title": "Application Override",
-              "type": "integer"
-            },
-            "channel": {
-              "title": "Channel",
-              "type": "integer"
-            },
-            "rampDuration": {
-              "title": "Ramp Duration",
-              "type": "string",
-              "description": "Optional dimmer ramp time."
-            },
-            "activeDuration": {
-              "title": "Active Duration",
-              "type": "string",
-              "description": "Optional switch/trigger duration."
-            }
-          }
-        },
-        "default": []
+        "type": "string"
       }
     }
   },
@@ -236,22 +89,13 @@
     { "key": "client_network" },
     { "key": "client_application" },
     { "key": "client_debug" },
-
     { "key": "autoDiscover" },
     { "key": "discoveryDefaultType" },
-
     { "key": "discoveryCacheEnabled" },
     { "key": "discoveryCachePath" },
-
-    { "key": "discoveredAccessories" },
-
-    { "key": "accessories" },
-
     {
       "type": "advanced",
       "items": [
-        "includeDiscoveredGroups",
-        "excludeDiscoveredGroups",
         "platform_export",
         "database_export"
       ]

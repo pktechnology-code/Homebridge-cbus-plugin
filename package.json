@@ -1,14 +1,14 @@
 {
   "name": "homebridge-cbus-v2",
   "author": "pktechnology",
-  "version": "2.0.10",
-  "description": "Homebridge plugin for Clipsal C-Bus (C-Gate) lighting and automation systems with HomeKit support",
+  "version": "2.4.0",
+  "description": "Homebridge v2 compatible C-Bus / Clipsal C-Gate platform plugin",
   "main": "index.js",
   "license": "MIT",
   "homepage": "https://github.com/pktechnology-code/Homebridge-cbus-plugin",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/pktechnology-code/Homebridge-cbus-plugin.git"
+    "url": "https://github.com/pktechnology-code/Homebridge-cbus-plugin"
   },
   "bugs": {
     "url": "https://github.com/pktechnology-code/Homebridge-cbus-plugin/issues"
@@ -27,6 +27,7 @@
     "homebridge": ">=2.0.0"
   },
   "dependencies": {
+    "@homebridge/plugin-ui-utils": "^2.2.3",
     "bytes": "^2.4.0",
     "carrier": "^0.3.0",
     "chalk": "^1.1.3",
@@ -40,12 +41,10 @@
   },
   "devDependencies": {},
   "scripts": {
-    "test": "node -c index.js && find accessories lib -name '*.js' -print0 | xargs -0 -n1 node -c"
+    "test": "node -c index.js && node -c lib/discovery-cache.js && node -c homebridge-ui/server.js"
   },
   "homebridge": {
     "pluginAlias": "CBus",
-    "pluginType": "platform",
-    "brandColor": "#6f42c1",
-    "icon": "home-automation"
+    "pluginType": "platform"
   }
 }
