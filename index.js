@@ -207,17 +207,26 @@ CBusPlatform.prototype._createAccessories = function () {
 	const accessories = [];
 
 	for (let config of this.config.accessories) {
-		if (config.enabled === false) {
-			log(`Skipping disabled accessory '${config.name}' (${config.type})`);
-		} else {
-			try {
-				const accessory = this.createAccessory(config);
-				accessories.push(accessory);
-			} catch (err) {
-				throw new Error(`Unable to instantiate accessory '${config.name}' (${config.type}) reason: ${err}. ABORTING`);
-			}
-		}
-	}
+
+    // Skip empty or invalid entries (UI often creates these)
+    if (!config || !config.type || !config.id || !config.name) {
+        log(`Skipping invalid accessory config: ${JSON.stringify(config)}`);
+        continue;
+    }
+
+    if (config.enabled === false) {
+        log(`Skipping disabled accessory '${config.name}' (${config.type})`);
+        continue;
+    }
+
+    try {
+        const accessory = this.createAccessory(config);
+        accessories.push(accessory);
+    } catch (err) {
+        log(`Failed to create accessory '${config.name}' (${config.type}): ${err}`);
+        continue; // DO NOT crash Homebridge
+    }
+}
 
 	return accessories;
 };
