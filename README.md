@@ -1,3 +1,5 @@
+![npm](https://img.shields.io/npm/v/homebridge-cbus-v2)
+![downloads](https://img.shields.io/npm/dt/homebridge-cbus-v2)
 ![Homebridge](https://img.shields.io/badge/Homebridge-2.x-blue)
 
 # homebridge-cbus-v2
