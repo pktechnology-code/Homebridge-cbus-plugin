@@ -13,7 +13,6 @@ const CGateExport = require(`./lib/cgate-export.js`);
 const DiscoveryCache = require('./lib/discovery-cache.js');
 
 const CBusNetId = require(`./lib/cbus-netid.js`);
-const cbusUtils = require(`./lib/cbus-utils.js`);
 
 // ==========================================================================================
 // Exports block
@@ -168,19 +167,19 @@ CBusPlatform.prototype.accessories = function (callback) {
 			}
 
 			if (this.config.database_export) {
-	new CGateExport(this.database).exportDatabase(this.config.database_export);
-}
+				new CGateExport(this.database).exportDatabase(this.config.database_export);
+			}
 
-if (this.config.discoveryCacheEnabled || this.config.discovery_cache_enabled) {
-	try {
-		const result = DiscoveryCache.writeDiscoveryCache(this);
-		log(`Wrote C-Bus discovery cache with ${result.totalGroups} groups to ${result.path}`);
-	} catch (err) {
-		log(`Failed to write C-Bus discovery cache: ${err}`);
-	}
-}
+			if (this.config.discoveryCacheEnabled || this.config.discovery_cache_enabled) {
+				try {
+					const result = DiscoveryCache.writeDiscoveryCache(this);
+					log(`Wrote C-Bus discovery cache with ${result.totalGroups} groups to ${result.path}`);
+				} catch (err) {
+					log(`Failed to write C-Bus discovery cache: ${err}`);
+				}
+			}
 
-const accessories = this._createAccessories();
+			const accessories = this._createAccessories();
 
 			this.registeredAccessories = {};
 			for (const accessory of accessories) {
@@ -193,6 +192,52 @@ const accessories = this._createAccessories();
 	}.bind(this));
 };
 
+CBusPlatform.prototype._normaliseDiscoveredAccessoryConfig = function (config) {
+	if (!config) {
+		return undefined;
+	}
+
+	return {
+		type: config.type || this.config.discoveryDefaultType || 'light',
+		id: typeof config.id === 'undefined' ? undefined : String(config.id),
+		name: config.name,
+		enabled: config.enabled !== false,
+		network: config.network,
+		application: config.application,
+		channel: config.channel,
+		rampDuration: config.rampDuration,
+		activeDuration: config.activeDuration
+	};
+};
+
+CBusPlatform.prototype._createConfiguredDiscoveredAccessoryConfigs = function () {
+	const discoveredAccessories = this.config.discoveredAccessories || [];
+
+	if (!Array.isArray(discoveredAccessories) || discoveredAccessories.length === 0) {
+		return [];
+	}
+
+	const configs = [];
+
+	for (const config of discoveredAccessories) {
+		const normalisedConfig = this._normaliseDiscoveredAccessoryConfig(config);
+
+		if (!normalisedConfig || !normalisedConfig.id || !normalisedConfig.name || !normalisedConfig.type) {
+			log(`Skipping invalid discovered accessory config: ${JSON.stringify(config)}`);
+			continue;
+		}
+
+		if (normalisedConfig.enabled === false) {
+			log(`Skipping disabled discovered accessory '${normalisedConfig.name}' (${normalisedConfig.type})`);
+			continue;
+		}
+
+		configs.push(normalisedConfig);
+	}
+
+	return configs;
+};
+
 CBusPlatform.prototype._createDiscoveredAccessoryConfigs = function () {
 	if (!this.config.autoDiscover) {
 		return [];
@@ -203,7 +248,7 @@ CBusPlatform.prototype._createDiscoveredAccessoryConfigs = function () {
 	const defaultType = this.config.discoveryDefaultType || 'light';
 
 	if (includeIds.size === 0) {
-		log('Auto discovery enabled, but Include Discovered Group IDs is empty. No discovered groups will be exposed.');
+		log('Auto discovery enabled, but Include Discovered Group IDs is empty. No legacy discovered groups will be exposed.');
 		return [];
 	}
 
@@ -255,8 +300,14 @@ CBusPlatform.prototype._createAccessories = function () {
 	const accessories = [];
 
 	const manualAccessoryConfigs = this.config.accessories || [];
-	const discoveredAccessoryConfigs = this._createDiscoveredAccessoryConfigs();
-	const combinedAccessoryConfigs = manualAccessoryConfigs.concat(discoveredAccessoryConfigs);
+	const configuredDiscoveredAccessoryConfigs = this._createConfiguredDiscoveredAccessoryConfigs();
+	const legacyDiscoveredAccessoryConfigs = this._createDiscoveredAccessoryConfigs();
+
+	const combinedAccessoryConfigs = manualAccessoryConfigs
+		.concat(configuredDiscoveredAccessoryConfigs)
+		.concat(legacyDiscoveredAccessoryConfigs);
+
+	const seenKeys = new Set();
 
 	for (let config of combinedAccessoryConfigs) {
 		if (!config || !config.type || !config.id || !config.name) {
@@ -268,6 +319,17 @@ CBusPlatform.prototype._createAccessories = function () {
 			log(`Skipping disabled accessory '${config.name}' (${config.type})`);
 			continue;
 		}
+
+		const network = typeof config.network === 'undefined' ? this.network : config.network;
+		const application = typeof config.application === 'undefined' ? this.application : config.application;
+		const key = `${network}/${application}/${config.id}`;
+
+		if (seenKeys.has(key)) {
+			log(`Skipping duplicate accessory '${config.name}' (${config.type}) for group ${key}`);
+			continue;
+		}
+
+		seenKeys.add(key);
 
 		try {
 			const accessory = this.createAccessory(config);
