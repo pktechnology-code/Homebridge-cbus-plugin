@@ -42,69 +42,117 @@
         "required": true
       },
       "client_debug": {
-  "title": "Enable C-Gate Debug Logging",
-  "type": "boolean",
-  "default": false
-},
-"autoDiscover": {
-  "title": "Enable Auto Discovery",
-  "type": "boolean",
-  "default": false,
-  "description": "Discover C-Bus groups from C-Gate. Discovered groups are only added to HomeKit if their group IDs are listed in Include Discovered Group IDs."
-},
-"discoveryDefaultType": {
-  "title": "Default Type for Discovered Groups",
-  "type": "string",
-  "default": "light",
-  "oneOf": [
-    { "title": "Light", "enum": ["light"] },
-    { "title": "Dimmer", "enum": ["dimmer"] },
-    { "title": "Switch", "enum": ["switch"] }
-  ],
-  "description": "Accessory type used for discovered groups unless manually configured."
-},
-"includeDiscoveredGroups": {
-  "title": "Include Discovered Group IDs",
-  "type": "array",
-  "items": {
-    "type": "string"
-  },
-  "default": [],
-  "description": "Only discovered C-Bus group IDs listed here will be exposed to HomeKit, for example: 6, 71, 84."
-},
-"excludeDiscoveredGroups": {
-  "title": "Exclude Discovered Group IDs",
-  "type": "array",
-  "items": {
-    "type": "string"
-  },
-  "default": [],
-  "description": "Optional list of discovered C-Bus group IDs to ignore."
-},
-"discoveryCacheEnabled": {
-  "title": "Write Discovery Cache on Startup",
-  "type": "boolean",
-  "default": false,
-  "description": "Writes a JSON file containing all discovered C-Bus groups from C-Gate. This does not add accessories to HomeKit."
-},
-"discoveryCachePath": {
-  "title": "Discovery Cache Output Path",
-  "type": "string",
-  "default": "",
-  "description": "Optional path for the discovery cache JSON file. Leave blank to write cbus-discovery-cache.json in the Homebridge working directory."
-},
-"platform_export": {
+        "title": "Enable C-Gate Debug Logging",
+        "type": "boolean",
+        "default": false
+      },
+      "autoDiscover": {
+        "title": "Enable Auto Discovery",
+        "type": "boolean",
+        "default": false,
+        "description": "Discover C-Bus groups from C-Gate."
+      },
+      "discoveryDefaultType": {
+        "title": "Default Type for Discovered Groups",
+        "type": "string",
+        "default": "light",
+        "oneOf": [
+          { "title": "Light", "enum": ["light"] },
+          { "title": "Dimmer", "enum": ["dimmer"] },
+          { "title": "Switch", "enum": ["switch"] }
+        ],
+        "description": "Accessory type used for discovered groups unless manually configured."
+      },
+      "includeDiscoveredGroups": {
+        "title": "Include Discovered Group IDs",
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "default": [],
+        "description": "Legacy discovery inclusion list."
+      },
+      "excludeDiscoveredGroups": {
+        "title": "Exclude Discovered Group IDs",
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "default": [],
+        "description": "Optional list of discovered C-Bus group IDs to ignore."
+      },
+      "discoveryCacheEnabled": {
+        "title": "Write Discovery Cache on Startup",
+        "type": "boolean",
+        "default": false,
+        "description": "Writes a JSON file containing all discovered C-Bus groups from C-Gate."
+      },
+      "discoveryCachePath": {
+        "title": "Discovery Cache Output Path",
+        "type": "string",
+        "default": "",
+        "description": "Optional path for the discovery cache JSON file."
+      },
+
+      "discoveredAccessories": {
+        "title": "Discovered Accessories",
+        "type": "array",
+        "description": "Select discovered C-Bus groups to expose to HomeKit.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "title": "Enabled",
+              "type": "boolean",
+              "default": true
+            },
+            "id": {
+              "title": "Group Address / ID",
+              "type": "string",
+              "required": true
+            },
+            "name": {
+              "title": "Accessory Name",
+              "type": "string",
+              "required": true
+            },
+            "type": {
+              "title": "Type",
+              "type": "string",
+              "default": "light",
+              "oneOf": [
+                { "title": "Light", "enum": ["light"] },
+                { "title": "Dimmer", "enum": ["dimmer"] },
+                { "title": "Switch", "enum": ["switch"] },
+                { "title": "Fan", "enum": ["fan"] },
+                { "title": "Motion", "enum": ["motion"] },
+                { "title": "Security", "enum": ["security"] },
+                { "title": "Shutter", "enum": ["shutter"] },
+                { "title": "Trigger", "enum": ["trigger"] },
+                { "title": "Smoke", "enum": ["smoke"] },
+                { "title": "Contact", "enum": ["contact"] },
+                { "title": "Temperature", "enum": ["temperature"] }
+              ]
+            }
+          }
+        },
+        "default": []
+      },
+
+      "platform_export": {
         "title": "Platform Export Path",
         "type": "string",
-        "description": "Optional path to export generated platform JSON. Leave blank unless required."
+        "description": "Optional path to export generated platform JSON."
       },
+
       "database_export": {
         "title": "Database Export Path",
         "type": "string",
-        "description": "Optional path to export C-Gate database JSON. Leave blank unless required."
+        "description": "Optional path to export C-Gate database JSON."
       },
+
       "accessories": {
-        "title": "Accessories",
+        "title": "Manual Accessories",
         "type": "array",
         "items": {
           "type": "object",
@@ -157,12 +205,12 @@
             "rampDuration": {
               "title": "Ramp Duration",
               "type": "string",
-              "description": "Optional dimmer ramp time, e.g. 1s, 500ms, 2m."
+              "description": "Optional dimmer ramp time."
             },
             "activeDuration": {
               "title": "Active Duration",
               "type": "string",
-              "description": "Optional switch/trigger duration, e.g. 1 sec."
+              "description": "Optional switch/trigger duration."
             }
           }
         },
@@ -170,6 +218,7 @@
       }
     }
   },
+
   "layout": [
     { "key": "name" },
     { "key": "client_ip_address" },
@@ -178,13 +227,25 @@
     { "key": "client_network" },
     { "key": "client_application" },
     { "key": "client_debug" },
+
     { "key": "autoDiscover" },
     { "key": "discoveryDefaultType" },
-    { "key": "includeDiscoveredGroups" },
-    { "key": "excludeDiscoveredGroups" },
+
     { "key": "discoveryCacheEnabled" },
     { "key": "discoveryCachePath" },
+
+    { "key": "discoveredAccessories" },
+
     { "key": "accessories" },
-    { "type": "advanced", "items": ["platform_export", "database_export"] }
+
+    {
+      "type": "advanced",
+      "items": [
+        "includeDiscoveredGroups",
+        "excludeDiscoveredGroups",
+        "platform_export",
+        "database_export"
+      ]
+    }
   ]
 }

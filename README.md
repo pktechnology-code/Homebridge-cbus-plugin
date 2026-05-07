@@ -45,6 +45,31 @@ Enable discovery cache export in the plugin settings:
   "discoveryCacheEnabled": true
 }
 
+## Discovered Accessories Selection
+
+Version 2.3.0 adds a GUI-editable discovered accessories list.
+
+After generating the discovery cache, copy selected groups into `discoveredAccessories`:
+
+```json
+{
+  "discoveredAccessories": [
+    {
+      "enabled": true,
+      "id": "6",
+      "name": "Fireplace",
+      "type": "light"
+    },
+    {
+      "enabled": true,
+      "id": "90",
+      "name": "Garage Door",
+      "type": "switch",
+      "activeDuration": "1 sec"
+    }
+  ]
+}
+
 
 ## Status
 
