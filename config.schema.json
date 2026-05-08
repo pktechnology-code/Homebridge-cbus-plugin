@@ -28,7 +28,7 @@
         "title": "C-Bus Project Name",
         "type": "string",
         "required": true,
-        "description": "The C-Gate project name, for example MyHouse."
+        "description": "The C-Gate project name from Toolkit/C-Gate, for example MYHOUSE. This must be entered for your installation."
       },
       "client_network": {
         "title": "C-Bus Network",
@@ -72,7 +72,7 @@
         "title": "Discovery Cache Output Path",
         "type": "string",
         "default": "",
-        "description": "Optional path for the discovery cache JSON file. Leave blank to store it in the Homebridge storage folder."
+        "description": "Optional full path for the discovery cache JSON file. Leave blank to use cbus-discovery-cache.json in the Homebridge storage folder, or enter a custom path."
       },
       "platform_export": {
         "title": "Platform Export Path",
