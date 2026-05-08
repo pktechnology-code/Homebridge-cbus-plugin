@@ -186,7 +186,7 @@
 
       <div class="mt-3">
         <button id="saveSettingsBtn" class="btn btn-primary">
-          Save C-Gate Settings
+          Save Settings
         </button>
       </div>
 
@@ -195,11 +195,11 @@
       </div>
     </div>
 
-    <h5 class="mb-3">2. Load Discovered Groups</h5>
+    <h5 class="mb-3">2. Discover Accessories</h5>
 
     <div class="mb-3">
       <button id="loadBtn" class="btn btn-primary">
-        Load Discovery Cache
+        Discover Accessories
       </button>
 
       <button id="selectAllBtn" class="btn btn-secondary">
@@ -238,7 +238,7 @@
         <tbody id="groupsTable">
           <tr>
             <td colspan="5" class="text-muted">
-              Click "Load Discovery Cache".
+              Click "Discover Accessories".
             </td>
           </tr>
         </tbody>
@@ -272,6 +272,22 @@
   let groups = [];
   let pluginConfigArray = [];
   let platformConfig = null;
+  let settingsSaved = false;
+  const SETUP_FIELD_IDS = [
+    'pluginName',
+    'clientCbusName',
+    'clientIpAddress',
+    'clientControlPort',
+    'clientNetwork',
+    'clientApplication',
+    'discoveryDefaultType',
+    'discoveryCachePath',
+    'discoveryCacheEnabled',
+    'autoDiscover',
+    'clientDebug',
+    'platformExportPath',
+    'databaseExportPath'
+  ];
   const RESERVED_PROJECT_NAMES = new Set([
     'P',
     'CBUS',
@@ -341,6 +357,11 @@
     const locationText = configuredPath || 'Homebridge storage folder/cbus-discovery-cache.json';
 
     document.getElementById('cacheLocationText').innerText = locationText;
+  }
+
+  function markSettingsDirty() {
+    settingsSaved = false;
+    updateSetupReadiness();
   }
 
   function validateProjectName(value) {
@@ -419,8 +440,11 @@
 
     if (!projectName) {
       setSetupStatus('Step 1 needs a C-Bus project name before discovery can run.', 'warning');
+    } else if (!settingsSaved) {
+      document.getElementById('loadBtn').disabled = true;
+      setSetupStatus('Save settings to config.json before discovering accessories.', 'warning');
     } else {
-      setSetupStatus('Save these settings, apply them with the purple Save button, then restart Homebridge once.', 'info');
+      setSetupStatus('Settings saved. Discover Accessories can now connect to C-Gate.', 'success');
     }
   }
 
@@ -433,6 +457,7 @@
 
     if (pluginConfigArray.length === 0) {
       platformConfig = createDefaultPlatformConfig();
+      settingsSaved = false;
 
       pluginConfigArray = [platformConfig];
       syncSetupFields();
@@ -452,6 +477,7 @@
       platformConfig.accessories = [];
     }
 
+    settingsSaved = Boolean(platformConfig.client_cbusname);
     syncSetupFields();
   }
 
@@ -476,7 +502,7 @@
   async function saveSetupSettings() {
     try {
       homebridge.showSpinner();
-      setSetupStatus('Saving C-Gate settings...', 'info');
+      setSetupStatus('Saving settings to config.json...', 'info');
 
       if (!platformConfig) {
         await loadPluginConfig();
@@ -490,16 +516,18 @@
       pluginConfigArray[0] = platformConfig;
 
       await homebridge.updatePluginConfig(pluginConfigArray);
+      await homebridge.savePluginConfig();
 
+      settingsSaved = true;
       syncSetupFields();
 
       setSetupStatus(
-        'C-Gate settings prepared. Apply them with the purple Save button, then restart Homebridge once.',
+        'Settings saved to config.json. Discover Accessories can now connect to C-Gate.',
         'success'
       );
 
       homebridge.toast.success(
-        'C-Gate settings prepared. Click Save to apply.',
+        'Settings saved to config.json.',
         'C-Bus'
       );
     } catch (err) {
@@ -519,10 +547,14 @@
   async function loadDiscoveryCache() {
     try {
       homebridge.showSpinner();
-      setStatus('Loading discovery cache...', 'info');
+      setStatus('Discovering accessories from C-Gate...', 'info');
 
       if (!platformConfig) {
         await loadPluginConfig();
+      }
+
+      if (!settingsSaved) {
+        throw new Error('Save settings to config.json before discovering accessories.');
       }
 
       platformConfig = {
@@ -531,10 +563,8 @@
       };
 
       const result = await homebridge.request(
-        '/read-discovery-cache',
-        {
-          discoveryCachePath: platformConfig.discoveryCachePath
-        }
+        '/discover-accessories',
+        platformConfig
       );
 
       groups = Array.isArray(result.cache && result.cache.groups)
@@ -544,12 +574,14 @@
       render();
 
       setStatus(
-        `Loaded ${groups.length} discovered C-Bus groups from ${result.path}`,
+        result.path
+          ? `Discovered ${groups.length} C-Bus groups and saved the cache to ${result.path}`
+          : `Discovered ${groups.length} C-Bus groups`,
         'success'
       );
 
       homebridge.toast.success(
-        `Loaded ${groups.length} discovered groups`,
+        `Discovered ${groups.length} groups`,
         'C-Bus'
       );
 
@@ -720,14 +752,15 @@
       pluginConfigArray[0] = platformConfig;
 
       await homebridge.updatePluginConfig(pluginConfigArray);
+      await homebridge.savePluginConfig();
 
       setStatus(
-        `Prepared ${selectedAccessories.length} accessories. Now click the normal purple Save button to apply changes.`,
+        `Saved ${selectedAccessories.length} accessories to config.json. Restart Homebridge to expose them.`,
         'success'
       );
 
       homebridge.toast.success(
-        `Prepared ${selectedAccessories.length} selected accessories. Click Save to apply.`,
+        `Saved ${selectedAccessories.length} selected accessories.`,
         'C-Bus'
       );
 
@@ -762,12 +795,23 @@
     .getElementById('clientCbusName')
     .addEventListener('input', event => {
       event.target.value = normaliseProjectName(event.target.value);
-      updateSetupReadiness();
+      markSettingsDirty();
     });
 
   document
     .getElementById('discoveryCachePath')
-    .addEventListener('input', updateCacheLocationText);
+    .addEventListener('input', () => {
+      updateCacheLocationText();
+      markSettingsDirty();
+    });
+
+  SETUP_FIELD_IDS
+    .filter(id => !['clientCbusName', 'discoveryCachePath'].includes(id))
+    .forEach(id => {
+      document
+        .getElementById(id)
+        .addEventListener('input', markSettingsDirty);
+    });
 
   document
     .getElementById('selectAllBtn')
