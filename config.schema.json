@@ -84,6 +84,49 @@
       "database_export": {
         "title": "Database Export Path",
         "type": "string"
+      },
+      "discoveredAccessories": {
+        "title": "Discovered Accessories",
+        "type": "array",
+        "default": [],
+        "items": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true
+            },
+            "id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "activeDuration": {
+              "type": "string"
+            },
+            "network": {
+              "type": "integer"
+            },
+            "application": {
+              "type": "integer"
+            },
+            "channel": {
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "accessories": {
+        "title": "Legacy Accessories",
+        "type": "array",
+        "default": [],
+        "items": {
+          "type": "object"
+        }
       }
     }
   },

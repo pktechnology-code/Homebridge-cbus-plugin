@@ -580,6 +580,11 @@
     return map;
   }
 
+  async function updatePluginConfigFromPlatform() {
+    pluginConfigArray[0] = platformConfig;
+    await homebridge.updatePluginConfig(pluginConfigArray);
+  }
+
   async function saveSetupSettings() {
     try {
       setSetupStatus('Applying settings...', 'info');
@@ -593,9 +598,7 @@
         ...readSetupFields()
       };
 
-      pluginConfigArray[0] = platformConfig;
-
-      await homebridge.updatePluginConfig(pluginConfigArray);
+      await updatePluginConfigFromPlatform();
 
       settingsApplied = true;
       syncSetupFields();
@@ -809,6 +812,18 @@
     return selected;
   }
 
+  function buildCurrentAccessorySelection() {
+    const rows = document.querySelectorAll('#groupsTable tr[data-id]');
+
+    if (rows.length > 0) {
+      return buildSelectedAccessories();
+    }
+
+    return Array.isArray(platformConfig && platformConfig.discoveredAccessories)
+      ? platformConfig.discoveredAccessories
+      : [];
+  }
+
   async function addManualAccessory() {
     try {
       if (!platformConfig) {
@@ -843,11 +858,9 @@
         manualAccessory.activeDuration = activeDuration;
       }
 
-      if (!Array.isArray(platformConfig.discoveredAccessories)) {
-        platformConfig.discoveredAccessories = [];
-      }
+      const currentSelection = buildCurrentAccessorySelection();
 
-      platformConfig.discoveredAccessories = platformConfig.discoveredAccessories
+      platformConfig.discoveredAccessories = currentSelection
         .filter(item => String(item.id) !== id)
         .concat(manualAccessory);
 
@@ -863,11 +876,16 @@
 
       render();
 
+      await updatePluginConfigFromPlatform();
+
       document.getElementById('manualId').value = '';
       document.getElementById('manualName').value = '';
       document.getElementById('manualActiveDuration').value = '';
 
-      setStatus(`Added manual accessory ${id}: ${name}`, 'success');
+      setStatus(
+        `Added manual accessory ${id}: ${name}. Click the purple Homebridge Save button to write it to config.json.`,
+        'success'
+      );
     } catch (err) {
       console.error(err);
 
@@ -897,9 +915,7 @@
         discoveredAccessories: selectedAccessories
       };
 
-      pluginConfigArray[0] = platformConfig;
-
-      await homebridge.updatePluginConfig(pluginConfigArray);
+      await updatePluginConfigFromPlatform();
 
       setStatus(
         `Config prepared with ${selectedAccessories.length} accessories. Click the purple Homebridge Save button, then restart Homebridge.`,
