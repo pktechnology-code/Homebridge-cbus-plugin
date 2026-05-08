@@ -21,7 +21,7 @@
   <div class="card-body">
 
     <div class="border-bottom pb-3 mb-3">
-      <h5 class="mb-3">C-Gate Connection</h5>
+      <h5 class="mb-3">1. Configure C-Gate</h5>
 
       <div class="row g-3">
         <div class="col-md-6">
@@ -91,87 +91,98 @@
             step="1"
           >
         </div>
-
-        <div class="col-md-6">
-          <label for="discoveryDefaultType" class="form-label">Default Discovery Type</label>
-          <select id="discoveryDefaultType" class="form-select">
-            <option value="light">light</option>
-            <option value="dimmer">dimmer</option>
-            <option value="switch">switch</option>
-            <option value="fan">fan</option>
-          </select>
-        </div>
-
-        <div class="col-md-6">
-          <label for="discoveryCachePath" class="form-label">Discovery Cache Output Path</label>
-          <input
-            id="discoveryCachePath"
-            type="text"
-            class="form-control"
-            placeholder="Homebridge storage folder"
-            autocomplete="off"
-          >
-        </div>
-
-        <div class="col-md-6">
-          <div class="form-check">
-            <input
-              id="discoveryCacheEnabled"
-              type="checkbox"
-              class="form-check-input"
-            >
-            <label for="discoveryCacheEnabled" class="form-check-label">
-              Write discovery cache on startup
-            </label>
-          </div>
-        </div>
-
-        <div class="col-md-6">
-          <div class="form-check">
-            <input
-              id="autoDiscover"
-              type="checkbox"
-              class="form-check-input"
-            >
-            <label for="autoDiscover" class="form-check-label">
-              Enable auto discovery
-            </label>
-          </div>
-        </div>
-
-        <div class="col-md-6">
-          <div class="form-check">
-            <input
-              id="clientDebug"
-              type="checkbox"
-              class="form-check-input"
-            >
-            <label for="clientDebug" class="form-check-label">
-              Enable C-Gate debug logging
-            </label>
-          </div>
-        </div>
-
-        <div class="col-md-6">
-          <label for="platformExportPath" class="form-label">Platform Export Path</label>
-          <input
-            id="platformExportPath"
-            type="text"
-            class="form-control"
-            autocomplete="off"
-          >
-        </div>
-
-        <div class="col-md-6">
-          <label for="databaseExportPath" class="form-label">Database Export Path</label>
-          <input
-            id="databaseExportPath"
-            type="text"
-            class="form-control"
-            autocomplete="off"
-          >
-        </div>
       </div>
+
+      <div class="alert alert-light border mt-3 mb-0">
+        Discovery cache location:
+        <strong id="cacheLocationText">Homebridge storage folder/cbus-discovery-cache.json</strong>
+      </div>
+
+      <details class="mt-3">
+        <summary class="fw-semibold">Advanced</summary>
+
+        <div class="row g-3 mt-1">
+          <div class="col-md-6">
+            <label for="discoveryDefaultType" class="form-label">Default Discovery Type</label>
+            <select id="discoveryDefaultType" class="form-select">
+              <option value="light">light</option>
+              <option value="dimmer">dimmer</option>
+              <option value="switch">switch</option>
+              <option value="fan">fan</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label for="discoveryCachePath" class="form-label">Discovery Cache Output Path</label>
+            <input
+              id="discoveryCachePath"
+              type="text"
+              class="form-control"
+              placeholder="Homebridge storage folder"
+              autocomplete="off"
+            >
+          </div>
+
+          <div class="col-md-6">
+            <div class="form-check">
+              <input
+                id="discoveryCacheEnabled"
+                type="checkbox"
+                class="form-check-input"
+              >
+              <label for="discoveryCacheEnabled" class="form-check-label">
+                Write discovery cache on startup
+              </label>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="form-check">
+              <input
+                id="autoDiscover"
+                type="checkbox"
+                class="form-check-input"
+              >
+              <label for="autoDiscover" class="form-check-label">
+                Enable auto discovery
+              </label>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="form-check">
+              <input
+                id="clientDebug"
+                type="checkbox"
+                class="form-check-input"
+              >
+              <label for="clientDebug" class="form-check-label">
+                Enable C-Gate debug logging
+              </label>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label for="platformExportPath" class="form-label">Platform Export Path</label>
+            <input
+              id="platformExportPath"
+              type="text"
+              class="form-control"
+              autocomplete="off"
+            >
+          </div>
+
+          <div class="col-md-6">
+            <label for="databaseExportPath" class="form-label">Database Export Path</label>
+            <input
+              id="databaseExportPath"
+              type="text"
+              class="form-control"
+              autocomplete="off"
+            >
+          </div>
+        </div>
+      </details>
 
       <div class="mt-3">
         <button id="saveSettingsBtn" class="btn btn-primary">
@@ -184,7 +195,7 @@
       </div>
     </div>
 
-    <h5 class="mb-3">Discovery</h5>
+    <h5 class="mb-3">2. Load Discovered Groups</h5>
 
     <div class="mb-3">
       <button id="loadBtn" class="btn btn-primary">
@@ -207,6 +218,8 @@
     <div id="status" class="alert alert-info">
       Ready
     </div>
+
+    <h5 class="mb-3">3. Select Accessories</h5>
 
     <div class="table-responsive">
 
@@ -321,6 +334,15 @@
     return String(value || '').trim().toUpperCase();
   }
 
+  function updateCacheLocationText() {
+    const configuredPath = document.getElementById('discoveryCachePath')
+      .value
+      .trim();
+    const locationText = configuredPath || 'Homebridge storage folder/cbus-discovery-cache.json';
+
+    document.getElementById('cacheLocationText').innerText = locationText;
+  }
+
   function validateProjectName(value) {
     if (!value) {
       return;
@@ -384,6 +406,7 @@
     document.getElementById('platformExportPath').value = config.platform_export || '';
     document.getElementById('databaseExportPath').value = config.database_export || '';
 
+    updateCacheLocationText();
     updateSetupReadiness();
   }
 
@@ -395,9 +418,9 @@
     document.getElementById('loadBtn').disabled = !projectName;
 
     if (!projectName) {
-      setSetupStatus('Enter the C-Bus project name before loading discovery.', 'warning');
+      setSetupStatus('Step 1 needs a C-Bus project name before discovery can run.', 'warning');
     } else {
-      setSetupStatus('Save these settings, click the purple Save button, then restart Homebridge to generate the discovery cache.', 'info');
+      setSetupStatus('Save these settings, apply them with the purple Save button, then restart Homebridge once.', 'info');
     }
   }
 
@@ -471,7 +494,7 @@
       syncSetupFields();
 
       setSetupStatus(
-        'C-Gate settings prepared. Click the purple Save button, then restart Homebridge to generate the discovery cache.',
+        'C-Gate settings prepared. Apply them with the purple Save button, then restart Homebridge once.',
         'success'
       );
 
@@ -521,7 +544,7 @@
       render();
 
       setStatus(
-        `Loaded ${groups.length} discovered C-Bus groups`,
+        `Loaded ${groups.length} discovered C-Bus groups from ${result.path}`,
         'success'
       );
 
@@ -741,6 +764,10 @@
       event.target.value = normaliseProjectName(event.target.value);
       updateSetupReadiness();
     });
+
+  document
+    .getElementById('discoveryCachePath')
+    .addEventListener('input', updateCacheLocationText);
 
   document
     .getElementById('selectAllBtn')
