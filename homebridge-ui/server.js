@@ -15,17 +15,24 @@ class CBusUiServer extends HomebridgePluginUiServer {
 
 	async readDiscoveryCache(payload) {
 		const requestedPath = payload && payload.discoveryCachePath
-			? String(payload.discoveryCachePath)
+			? String(payload.discoveryCachePath).trim()
 			: '';
 
 		const candidatePaths = [];
 
-		if (requestedPath.trim() !== '') {
+		if (requestedPath !== '') {
 			candidatePaths.push(path.resolve(requestedPath));
 		}
 
-		candidatePaths.push(path.resolve(this.homebridgeStoragePath, 'cbus-discovery-cache.json'));
-		candidatePaths.push(path.resolve(process.cwd(), 'cbus-discovery-cache.json'));
+		if (this.homebridgeStoragePath) {
+			candidatePaths.push(
+				path.resolve(this.homebridgeStoragePath, 'cbus-discovery-cache.json')
+			);
+		}
+
+		candidatePaths.push(
+			path.resolve(process.cwd(), 'cbus-discovery-cache.json')
+		);
 
 		const uniquePaths = [...new Set(candidatePaths)];
 
@@ -43,11 +50,17 @@ class CBusUiServer extends HomebridgePluginUiServer {
 					cache: parsed
 				};
 			} catch (err) {
-				throw new RequestError(`Failed to read discovery cache at ${filePath}: ${err.message}`, { status: 500 });
+				throw new RequestError(
+					`Failed to read discovery cache at ${filePath}: ${err.message}`,
+					{ status: 500 }
+				);
 			}
 		}
 
-		throw new RequestError(`Discovery cache not found. Tried: ${uniquePaths.join(', ')}`, { status: 404 });
+		throw new RequestError(
+			`Discovery cache not found. Tried: ${uniquePaths.join(', ')}`,
+			{ status: 404 }
+		);
 	}
 }
 
