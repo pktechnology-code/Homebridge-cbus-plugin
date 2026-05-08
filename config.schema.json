@@ -27,6 +27,9 @@
       "client_cbusname": {
         "title": "C-Bus Project Name",
         "type": "string",
+        "minLength": 1,
+        "maxLength": 8,
+        "pattern": "^[A-Z0-9_]+$",
         "required": true,
         "description": "The C-Gate project name from Toolkit/C-Gate, for example MYHOUSE. This must be entered for your installation."
       },
