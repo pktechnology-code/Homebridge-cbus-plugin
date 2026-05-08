@@ -15,7 +15,8 @@
         "title": "C-Gate Host",
         "type": "string",
         "default": "127.0.0.1",
-        "required": true
+        "required": true,
+        "description": "IP address or host name of the C-Gate server. Use 127.0.0.1 when C-Gate runs on the same machine as Homebridge."
       },
       "client_controlport": {
         "title": "C-Gate Control Port",
@@ -26,7 +27,8 @@
       "client_cbusname": {
         "title": "C-Bus Project Name",
         "type": "string",
-        "required": true
+        "required": true,
+        "description": "The C-Gate project name, for example MyHouse."
       },
       "client_network": {
         "title": "C-Bus Network",
@@ -69,7 +71,8 @@
       "discoveryCachePath": {
         "title": "Discovery Cache Output Path",
         "type": "string",
-        "default": "/volume1/DATA1/cbus-discovery-cache.json"
+        "default": "",
+        "description": "Optional path for the discovery cache JSON file. Leave blank to store it in the Homebridge storage folder."
       },
       "platform_export": {
         "title": "Platform Export Path",

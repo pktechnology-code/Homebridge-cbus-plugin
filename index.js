@@ -172,7 +172,10 @@ CBusPlatform.prototype.accessories = function (callback) {
 
 			if (this.config.discoveryCacheEnabled || this.config.discovery_cache_enabled) {
 				try {
+					this.config.storagePath = this.config.storagePath || process.cwd();
+
 					const result = DiscoveryCache.writeDiscoveryCache(this);
+
 					log(`Wrote C-Bus discovery cache with ${result.totalGroups} groups to ${result.path}`);
 				} catch (err) {
 					log(`Failed to write C-Bus discovery cache: ${err}`);
