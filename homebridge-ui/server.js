@@ -58,7 +58,7 @@ class CBusUiServer extends HomebridgePluginUiServer {
 		}
 
 		throw new RequestError(
-			`Discovery cache not found. Tried: ${uniquePaths.join(', ')}`,
+			`Discovery cache not found. The cache is created when Homebridge starts and the C-Bus plugin successfully connects to C-Gate. Save the plugin config and restart Homebridge, or set Discovery Cache Output Path to a writable location. Tried: ${uniquePaths.join(', ')}`,
 			{ status: 404 }
 		);
 	}
