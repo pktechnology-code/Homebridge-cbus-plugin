@@ -22,7 +22,8 @@
 
     <p class="text-muted">
       Load discovered C-Bus groups, choose which accessories to expose to HomeKit,
-      then save the selection safely into the plugin configuration.
+      then click <strong>Save Selected Accessories</strong>. After that, click the normal purple
+      <strong>Save</strong> button in Homebridge to apply the configuration.
     </p>
 
     <div class="mb-3">
@@ -96,22 +97,16 @@
   ];
 
   let groups = [];
-
   let pluginConfigArray = [];
-
   let platformConfig = null;
 
   function setStatus(message, type = 'info') {
-
     const status = document.getElementById('status');
-
     status.className = `alert alert-${type}`;
-
     status.innerText = message;
   }
 
   function escapeHtml(value) {
-
     return String(value ?? '')
       .replaceAll('&', '&amp;')
       .replaceAll('<', '&lt;')
@@ -121,7 +116,6 @@
   }
 
   async function loadPluginConfig() {
-
     pluginConfigArray = await homebridge.getPluginConfig();
 
     if (!Array.isArray(pluginConfigArray)) {
@@ -129,7 +123,6 @@
     }
 
     if (pluginConfigArray.length === 0) {
-
       platformConfig = {
         platform: 'CBus',
         name: 'Clipsal C-Gate',
@@ -148,31 +141,28 @@
       };
 
       pluginConfigArray = [platformConfig];
-
       return;
     }
 
     platformConfig = pluginConfigArray[0];
 
-    if (!platformConfig.discoveredAccessories) {
+    if (!Array.isArray(platformConfig.discoveredAccessories)) {
       platformConfig.discoveredAccessories = [];
     }
 
-    if (!platformConfig.accessories) {
+    if (!Array.isArray(platformConfig.accessories)) {
       platformConfig.accessories = [];
     }
   }
 
   function getSelectionsMap() {
-
     const map = new Map();
 
-    if (!platformConfig.discoveredAccessories) {
+    if (!platformConfig || !Array.isArray(platformConfig.discoveredAccessories)) {
       return map;
     }
 
     for (const item of platformConfig.discoveredAccessories) {
-
       if (!item || typeof item.id === 'undefined') {
         continue;
       }
@@ -184,12 +174,9 @@
   }
 
   async function loadDiscoveryCache() {
-
     try {
-
       homebridge.showSpinner();
-
-      setStatus('Loading discovery cache...');
+      setStatus('Loading discovery cache...', 'info');
 
       await loadPluginConfig();
 
@@ -200,7 +187,7 @@
         }
       );
 
-      groups = Array.isArray(result.cache.groups)
+      groups = Array.isArray(result.cache && result.cache.groups)
         ? result.cache.groups
         : [];
 
@@ -217,7 +204,6 @@
       );
 
     } catch (err) {
-
       console.error(err);
 
       setStatus(err.message || String(err), 'danger');
@@ -228,23 +214,29 @@
       );
 
     } finally {
-
       homebridge.hideSpinner();
     }
   }
 
   function render() {
-
     const tbody = document.getElementById('groupsTable');
-
     const selections = getSelectionsMap();
 
     tbody.innerHTML = '';
 
+    if (!groups.length) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5" class="text-muted">
+            No discovered groups loaded.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
     for (const group of groups) {
-
       const id = String(group.id);
-
       const existing = selections.get(id);
 
       const enabled = existing
@@ -252,6 +244,7 @@
         : false;
 
       const type = existing?.type
+        || group.suggestedType
         || platformConfig.discoveryDefaultType
         || 'light';
 
@@ -262,21 +255,16 @@
       const activeDuration = existing?.activeDuration || '';
 
       const typeOptions = TYPES.map(typeName => {
-
-        const selected = typeName === type
-          ? 'selected'
-          : '';
+        const selected = typeName === type ? 'selected' : '';
 
         return `
           <option value="${typeName}" ${selected}>
             ${typeName}
           </option>
         `;
-
       }).join('');
 
       const row = document.createElement('tr');
-
       row.dataset.id = id;
 
       row.innerHTML = `
@@ -321,7 +309,6 @@
   }
 
   function buildSelectedAccessories() {
-
     const rows = Array.from(
       document.querySelectorAll('#groupsTable tr[data-id]')
     );
@@ -329,7 +316,6 @@
     const selected = [];
 
     for (const row of rows) {
-
       const enabled = row.querySelector('.enabled').checked;
 
       if (!enabled) {
@@ -338,7 +324,8 @@
 
       const id = row.dataset.id;
 
-      const name = row.querySelector('.name').value.trim();
+      const name = row.querySelector('.name').value.trim()
+        || `C-Bus Group ${id}`;
 
       const type = row.querySelector('.type').value;
 
@@ -364,40 +351,35 @@
   }
 
   async function saveSelectedAccessories() {
-
     try {
-
       homebridge.showSpinner();
-
-      setStatus('Saving selected accessories...');
+      setStatus('Updating selected accessories...', 'info');
 
       await loadPluginConfig();
 
       const selectedAccessories = buildSelectedAccessories();
 
-      const mergedConfig = {
+      platformConfig = {
         ...platformConfig,
+        autoDiscover: true,
         discoveredAccessories: selectedAccessories
       };
 
-      pluginConfigArray[0] = mergedConfig;
+      pluginConfigArray[0] = platformConfig;
 
       await homebridge.updatePluginConfig(pluginConfigArray);
 
-      await homebridge.savePluginConfig();
-
       setStatus(
-        `Saved ${selectedAccessories.length} accessories successfully`,
+        `Prepared ${selectedAccessories.length} accessories. Now click the normal purple Save button to apply changes.`,
         'success'
       );
 
       homebridge.toast.success(
-        `Saved ${selectedAccessories.length} accessories`,
+        `Prepared ${selectedAccessories.length} selected accessories. Click Save to apply.`,
         'C-Bus'
       );
 
     } catch (err) {
-
       console.error(err);
 
       setStatus(err.message || String(err), 'danger');
@@ -408,7 +390,6 @@
       );
 
     } finally {
-
       homebridge.hideSpinner();
     }
   }
@@ -424,7 +405,6 @@
   document
     .getElementById('selectAllBtn')
     .addEventListener('click', () => {
-
       document
         .querySelectorAll('.enabled')
         .forEach(el => {
@@ -435,7 +415,6 @@
   document
     .getElementById('selectNoneBtn')
     .addEventListener('click', () => {
-
       document
         .querySelectorAll('.enabled')
         .forEach(el => {
