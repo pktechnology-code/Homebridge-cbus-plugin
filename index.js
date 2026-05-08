@@ -173,8 +173,20 @@ CBusPlatform.prototype.accessories = function (callback) {
 		this._processEvent(message);
 	}.bind(this));
 
-	this.client.connect(function () {
-		this.database.fetch(this.client, () => {
+	this.client.connect(function (err) {
+		if (err) {
+			log(`C-Gate connection failed: ${err.message || err}`);
+			callback([]);
+			return;
+		}
+
+		this.database.fetch(this.client, fetchErr => {
+			if (fetchErr) {
+				log(`Failed to fetch C-Gate database: ${fetchErr.message || fetchErr}`);
+				callback([]);
+				return;
+			}
+
 			const stats = this.database.getStats();
 			log(`Successfully fetched ${stats.numApplications} applications, ${stats.numGroups} groups and ${stats.numUnits} units from C-Gate.`);
 
