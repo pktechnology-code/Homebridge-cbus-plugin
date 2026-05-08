@@ -3,12 +3,17 @@
 <head>
   <meta charset="utf-8">
   <title>C-Bus Discovery Picker</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+  >
 </head>
 
 <body class="p-3">
 
 <div class="card">
+
   <div class="card-header">
     <strong>C-Bus Discovery Picker</strong>
   </div>
@@ -16,42 +21,64 @@
   <div class="card-body">
 
     <p class="text-muted">
-      Load the C-Bus discovery cache, select the accessories you want in HomeKit, choose their type, then save.
-      This will only update <code>discoveredAccessories</code> and will preserve the rest of your plugin configuration.
+      Load discovered C-Bus groups, choose which accessories to expose to HomeKit,
+      then save the selection safely into the plugin configuration.
     </p>
 
     <div class="mb-3">
-      <button id="loadCacheBtn" class="btn btn-primary">Load Discovery Cache</button>
-      <button id="selectAllBtn" class="btn btn-secondary">Select All</button>
-      <button id="selectNoneBtn" class="btn btn-secondary">Select None</button>
-      <button id="saveBtn" class="btn btn-success">Save Selected Accessories</button>
+      <button id="loadBtn" class="btn btn-primary">
+        Load Discovery Cache
+      </button>
+
+      <button id="selectAllBtn" class="btn btn-secondary">
+        Select All
+      </button>
+
+      <button id="selectNoneBtn" class="btn btn-secondary">
+        Select None
+      </button>
+
+      <button id="saveBtn" class="btn btn-success">
+        Save Selected Accessories
+      </button>
     </div>
 
     <div id="status" class="alert alert-info">
       Ready
     </div>
 
-    <table class="table table-striped table-sm align-middle">
-      <thead>
-        <tr>
-          <th style="width: 90px;">Enabled</th>
-          <th style="width: 90px;">ID</th>
-          <th>Name</th>
-          <th style="width: 180px;">Type</th>
-          <th style="width: 180px;">Active Duration</th>
-        </tr>
-      </thead>
-      <tbody id="groupsTable">
-        <tr>
-          <td colspan="5" class="text-muted">Click “Load Discovery Cache”.</td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="table-responsive">
+
+      <table class="table table-striped table-sm align-middle">
+
+        <thead>
+          <tr>
+            <th style="width:90px;">Enabled</th>
+            <th style="width:80px;">ID</th>
+            <th>Name</th>
+            <th style="width:180px;">Type</th>
+            <th style="width:180px;">Active Duration</th>
+          </tr>
+        </thead>
+
+        <tbody id="groupsTable">
+          <tr>
+            <td colspan="5" class="text-muted">
+              Click “Load Discovery Cache”.
+            </td>
+          </tr>
+        </tbody>
+
+      </table>
+
+    </div>
 
   </div>
+
 </div>
 
 <script>
+
 (async () => {
 
   const TYPES = [
@@ -69,16 +96,22 @@
   ];
 
   let groups = [];
+
   let pluginConfigArray = [];
+
   let platformConfig = null;
 
   function setStatus(message, type = 'info') {
+
     const status = document.getElementById('status');
+
     status.className = `alert alert-${type}`;
+
     status.innerText = message;
   }
 
   function escapeHtml(value) {
+
     return String(value ?? '')
       .replaceAll('&', '&amp;')
       .replaceAll('<', '&lt;')
@@ -88,14 +121,21 @@
   }
 
   async function loadPluginConfig() {
+
     pluginConfigArray = await homebridge.getPluginConfig();
 
-    if (!Array.isArray(pluginConfigArray) || pluginConfigArray.length === 0) {
+    if (!Array.isArray(pluginConfigArray)) {
+      pluginConfigArray = [];
+    }
+
+    if (pluginConfigArray.length === 0) {
+
       platformConfig = {
         platform: 'CBus',
         name: 'Clipsal C-Gate',
         client_ip_address: '127.0.0.1',
         client_controlport: 20023,
+        client_cbusname: 'OGILVY',
         client_network: 254,
         client_application: 56,
         client_debug: false,
@@ -108,132 +148,188 @@
       };
 
       pluginConfigArray = [platformConfig];
-      return platformConfig;
+
+      return;
     }
 
     platformConfig = pluginConfigArray[0];
 
-    if (!platformConfig.discoveredAccessories || !Array.isArray(platformConfig.discoveredAccessories)) {
+    if (!platformConfig.discoveredAccessories) {
       platformConfig.discoveredAccessories = [];
     }
 
-    if (!platformConfig.accessories || !Array.isArray(platformConfig.accessories)) {
+    if (!platformConfig.accessories) {
       platformConfig.accessories = [];
     }
-
-    return platformConfig;
   }
 
-  function currentSelectionsById() {
-    const selections = new Map();
+  function getSelectionsMap() {
 
-    if (!platformConfig || !Array.isArray(platformConfig.discoveredAccessories)) {
-      return selections;
+    const map = new Map();
+
+    if (!platformConfig.discoveredAccessories) {
+      return map;
     }
 
     for (const item of platformConfig.discoveredAccessories) {
-      if (item && typeof item.id !== 'undefined') {
-        selections.set(String(item.id), item);
+
+      if (!item || typeof item.id === 'undefined') {
+        continue;
       }
+
+      map.set(String(item.id), item);
     }
 
-    return selections;
+    return map;
   }
 
   async function loadDiscoveryCache() {
+
     try {
+
       homebridge.showSpinner();
-      setStatus('Loading discovery cache...', 'info');
 
-      const config = await loadPluginConfig();
+      setStatus('Loading discovery cache...');
 
-      const result = await homebridge.request('/read-discovery-cache', {
-        discoveryCachePath: config.discoveryCachePath
-      });
+      await loadPluginConfig();
 
-      groups = Array.isArray(result.cache && result.cache.groups)
+      const result = await homebridge.request(
+        '/read-discovery-cache',
+        {
+          discoveryCachePath: platformConfig.discoveryCachePath
+        }
+      );
+
+      groups = Array.isArray(result.cache.groups)
         ? result.cache.groups
         : [];
 
       render();
 
-      setStatus(`Loaded ${groups.length} discovered C-Bus groups from ${result.path}`, 'success');
-      homebridge.toast.success(`Loaded ${groups.length} C-Bus groups`, 'Discovery Cache');
+      setStatus(
+        `Loaded ${groups.length} discovered C-Bus groups`,
+        'success'
+      );
+
+      homebridge.toast.success(
+        `Loaded ${groups.length} discovered groups`,
+        'C-Bus'
+      );
 
     } catch (err) {
-      const message = err && err.message ? err.message : String(err);
-      setStatus(message, 'danger');
-      homebridge.toast.error(message, 'Discovery Cache');
+
+      console.error(err);
+
+      setStatus(err.message || String(err), 'danger');
+
+      homebridge.toast.error(
+        err.message || String(err),
+        'Discovery Cache'
+      );
+
     } finally {
+
       homebridge.hideSpinner();
     }
   }
 
   function render() {
-    const tbody = document.getElementById('groupsTable');
-    const selections = currentSelectionsById();
 
-    if (!groups.length) {
-      tbody.innerHTML = '<tr><td colspan="5" class="text-muted">No discovered groups loaded.</td></tr>';
-      return;
-    }
+    const tbody = document.getElementById('groupsTable');
+
+    const selections = getSelectionsMap();
 
     tbody.innerHTML = '';
 
-    groups.forEach(group => {
+    for (const group of groups) {
+
       const id = String(group.id);
+
       const existing = selections.get(id);
 
-      const enabled = existing ? existing.enabled !== false : false;
-      const name = existing && existing.name
-        ? existing.name
-        : (group.name || `C-Bus Group ${id}`);
+      const enabled = existing
+        ? existing.enabled !== false
+        : false;
 
-      const selectedType = existing && existing.type
-        ? existing.type
-        : (group.suggestedType || platformConfig.discoveryDefaultType || 'light');
+      const type = existing?.type
+        || platformConfig.discoveryDefaultType
+        || 'light';
 
-      const activeDuration = existing && existing.activeDuration
-        ? existing.activeDuration
-        : '';
+      const name = existing?.name
+        || group.name
+        || `C-Bus Group ${id}`;
 
-      const typeOptions = TYPES.map(type => {
-        const selected = type === selectedType ? 'selected' : '';
-        return `<option value="${type}" ${selected}>${type}</option>`;
+      const activeDuration = existing?.activeDuration || '';
+
+      const typeOptions = TYPES.map(typeName => {
+
+        const selected = typeName === type
+          ? 'selected'
+          : '';
+
+        return `
+          <option value="${typeName}" ${selected}>
+            ${typeName}
+          </option>
+        `;
+
       }).join('');
 
-      const tr = document.createElement('tr');
-      tr.dataset.id = id;
+      const row = document.createElement('tr');
 
-      tr.innerHTML = `
+      row.dataset.id = id;
+
+      row.innerHTML = `
         <td>
-          <input type="checkbox" class="form-check-input enabled" ${enabled ? 'checked' : ''}>
+          <input
+            type="checkbox"
+            class="form-check-input enabled"
+            ${enabled ? 'checked' : ''}
+          >
         </td>
+
         <td>
           <code>${escapeHtml(id)}</code>
         </td>
+
         <td>
-          <input type="text" class="form-control form-control-sm name" value="${escapeHtml(name)}">
+          <input
+            type="text"
+            class="form-control form-control-sm name"
+            value="${escapeHtml(name)}"
+          >
         </td>
+
         <td>
           <select class="form-select form-select-sm type">
             ${typeOptions}
           </select>
         </td>
+
         <td>
-          <input type="text" class="form-control form-control-sm activeDuration" value="${escapeHtml(activeDuration)}" placeholder="e.g. 1 sec">
+          <input
+            type="text"
+            class="form-control form-control-sm activeDuration"
+            placeholder="e.g. 1 sec"
+            value="${escapeHtml(activeDuration)}"
+          >
         </td>
       `;
 
-      tbody.appendChild(tr);
-    });
+      tbody.appendChild(row);
+    }
   }
 
-  function readSelectedAccessoriesFromTable() {
-    const rows = Array.from(document.querySelectorAll('#groupsTable tr[data-id]'));
+  function buildSelectedAccessories() {
+
+    const rows = Array.from(
+      document.querySelectorAll('#groupsTable tr[data-id]')
+    );
+
     const selected = [];
 
     for (const row of rows) {
+
       const enabled = row.querySelector('.enabled').checked;
 
       if (!enabled) {
@@ -241,9 +337,14 @@
       }
 
       const id = row.dataset.id;
-      const name = row.querySelector('.name').value.trim() || `C-Bus Group ${id}`;
+
+      const name = row.querySelector('.name').value.trim();
+
       const type = row.querySelector('.type').value;
-      const activeDuration = row.querySelector('.activeDuration').value.trim();
+
+      const activeDuration = row.querySelector('.activeDuration')
+        .value
+        .trim();
 
       const item = {
         enabled: true,
@@ -263,56 +364,86 @@
   }
 
   async function saveSelectedAccessories() {
+
     try {
+
       homebridge.showSpinner();
+
+      setStatus('Saving selected accessories...');
 
       await loadPluginConfig();
 
-      const selectedAccessories = readSelectedAccessoriesFromTable();
+      const selectedAccessories = buildSelectedAccessories();
 
-      platformConfig.discoveredAccessories = selectedAccessories;
-      platformConfig.autoDiscover = true;
+      const mergedConfig = {
+        ...platformConfig,
+        discoveredAccessories: selectedAccessories
+      };
 
-      pluginConfigArray[0] = platformConfig;
+      pluginConfigArray[0] = mergedConfig;
 
       await homebridge.updatePluginConfig(pluginConfigArray);
+
       await homebridge.savePluginConfig();
 
-      setStatus(`Saved ${selectedAccessories.length} selected accessories. Restart the child bridge to apply changes.`, 'success');
+      setStatus(
+        `Saved ${selectedAccessories.length} accessories successfully`,
+        'success'
+      );
 
       homebridge.toast.success(
-        `Saved ${selectedAccessories.length} selected accessories`,
-        'C-Bus Discovery Picker'
+        `Saved ${selectedAccessories.length} accessories`,
+        'C-Bus'
       );
 
     } catch (err) {
-      const message = err && err.message ? err.message : String(err);
-      setStatus(message, 'danger');
-      homebridge.toast.error(message, 'Save Failed');
+
+      console.error(err);
+
+      setStatus(err.message || String(err), 'danger');
+
+      homebridge.toast.error(
+        err.message || String(err),
+        'Save Failed'
+      );
+
     } finally {
+
       homebridge.hideSpinner();
     }
   }
 
-  document.getElementById('loadCacheBtn').addEventListener('click', loadDiscoveryCache);
+  document
+    .getElementById('loadBtn')
+    .addEventListener('click', loadDiscoveryCache);
 
-  document.getElementById('saveBtn').addEventListener('click', saveSelectedAccessories);
+  document
+    .getElementById('saveBtn')
+    .addEventListener('click', saveSelectedAccessories);
 
-  document.getElementById('selectAllBtn').addEventListener('click', () => {
-    document.querySelectorAll('.enabled').forEach(el => {
-      el.checked = true;
+  document
+    .getElementById('selectAllBtn')
+    .addEventListener('click', () => {
+
+      document
+        .querySelectorAll('.enabled')
+        .forEach(el => {
+          el.checked = true;
+        });
     });
-  });
 
-  document.getElementById('selectNoneBtn').addEventListener('click', () => {
-    document.querySelectorAll('.enabled').forEach(el => {
-      el.checked = false;
+  document
+    .getElementById('selectNoneBtn')
+    .addEventListener('click', () => {
+
+      document
+        .querySelectorAll('.enabled')
+        .forEach(el => {
+          el.checked = false;
+        });
     });
-  });
 
-  homebridge.addEventListener('ready', async () => {
-    await loadPluginConfig();
-  });
+  await loadPluginConfig();
 
 })();
 </script>
