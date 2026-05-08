@@ -20,11 +20,171 @@
 
   <div class="card-body">
 
-    <p class="text-muted">
-      Load discovered C-Bus groups, choose which accessories to expose to HomeKit,
-      then click <strong>Save Selected Accessories</strong>. After that, click the normal purple
-      <strong>Save</strong> button in Homebridge to apply the configuration.
-    </p>
+    <div class="border-bottom pb-3 mb-3">
+      <h5 class="mb-3">C-Gate Connection</h5>
+
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label for="pluginName" class="form-label">Plugin Name</label>
+          <input
+            id="pluginName"
+            type="text"
+            class="form-control"
+            autocomplete="off"
+          >
+        </div>
+
+        <div class="col-md-6">
+          <label for="clientCbusName" class="form-label">C-Bus Project Name</label>
+          <input
+            id="clientCbusName"
+            type="text"
+            class="form-control"
+            maxlength="8"
+            placeholder="MYHOUSE"
+            autocomplete="off"
+          >
+        </div>
+
+        <div class="col-md-6">
+          <label for="clientIpAddress" class="form-label">C-Gate Host</label>
+          <input
+            id="clientIpAddress"
+            type="text"
+            class="form-control"
+            autocomplete="off"
+          >
+        </div>
+
+        <div class="col-md-4">
+          <label for="clientControlPort" class="form-label">C-Gate Control Port</label>
+          <input
+            id="clientControlPort"
+            type="number"
+            class="form-control"
+            min="1"
+            max="65535"
+            step="1"
+          >
+        </div>
+
+        <div class="col-md-4">
+          <label for="clientNetwork" class="form-label">C-Bus Network</label>
+          <input
+            id="clientNetwork"
+            type="number"
+            class="form-control"
+            min="0"
+            max="255"
+            step="1"
+          >
+        </div>
+
+        <div class="col-md-4">
+          <label for="clientApplication" class="form-label">C-Bus Application</label>
+          <input
+            id="clientApplication"
+            type="number"
+            class="form-control"
+            min="0"
+            max="255"
+            step="1"
+          >
+        </div>
+
+        <div class="col-md-6">
+          <label for="discoveryDefaultType" class="form-label">Default Discovery Type</label>
+          <select id="discoveryDefaultType" class="form-select">
+            <option value="light">light</option>
+            <option value="dimmer">dimmer</option>
+            <option value="switch">switch</option>
+            <option value="fan">fan</option>
+          </select>
+        </div>
+
+        <div class="col-md-6">
+          <label for="discoveryCachePath" class="form-label">Discovery Cache Output Path</label>
+          <input
+            id="discoveryCachePath"
+            type="text"
+            class="form-control"
+            placeholder="Homebridge storage folder"
+            autocomplete="off"
+          >
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-check">
+            <input
+              id="discoveryCacheEnabled"
+              type="checkbox"
+              class="form-check-input"
+            >
+            <label for="discoveryCacheEnabled" class="form-check-label">
+              Write discovery cache on startup
+            </label>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-check">
+            <input
+              id="autoDiscover"
+              type="checkbox"
+              class="form-check-input"
+            >
+            <label for="autoDiscover" class="form-check-label">
+              Enable auto discovery
+            </label>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-check">
+            <input
+              id="clientDebug"
+              type="checkbox"
+              class="form-check-input"
+            >
+            <label for="clientDebug" class="form-check-label">
+              Enable C-Gate debug logging
+            </label>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <label for="platformExportPath" class="form-label">Platform Export Path</label>
+          <input
+            id="platformExportPath"
+            type="text"
+            class="form-control"
+            autocomplete="off"
+          >
+        </div>
+
+        <div class="col-md-6">
+          <label for="databaseExportPath" class="form-label">Database Export Path</label>
+          <input
+            id="databaseExportPath"
+            type="text"
+            class="form-control"
+            autocomplete="off"
+          >
+        </div>
+      </div>
+
+      <div class="mt-3">
+        <button id="saveSettingsBtn" class="btn btn-primary">
+          Save C-Gate Settings
+        </button>
+      </div>
+
+      <div id="setupStatus" class="alert alert-info mt-3 mb-0">
+        Enter the C-Bus project name before loading discovery.
+      </div>
+    </div>
+
+    <h5 class="mb-3">Discovery</h5>
 
     <div class="mb-3">
       <button id="loadBtn" class="btn btn-primary">
@@ -65,7 +225,7 @@
         <tbody id="groupsTable">
           <tr>
             <td colspan="5" class="text-muted">
-              Click “Load Discovery Cache”.
+              Click "Load Discovery Cache".
             </td>
           </tr>
         </tbody>
@@ -99,10 +259,45 @@
   let groups = [];
   let pluginConfigArray = [];
   let platformConfig = null;
+  const RESERVED_PROJECT_NAMES = new Set([
+    'P',
+    'CBUS',
+    'VM',
+    'CMDINT',
+    'CGATE',
+    'TAG'
+  ]);
+
+  function createDefaultPlatformConfig() {
+    return {
+      platform: 'CBus',
+      name: 'Clipsal C-Gate',
+      client_ip_address: '127.0.0.1',
+      client_controlport: 20023,
+      client_cbusname: '',
+      client_network: 254,
+      client_application: 56,
+      client_debug: false,
+      autoDiscover: true,
+      discoveryDefaultType: 'light',
+      discoveryCacheEnabled: true,
+      discoveryCachePath: '',
+      platform_export: '',
+      database_export: '',
+      discoveredAccessories: [],
+      accessories: []
+    };
+  }
 
   function setStatus(message, type = 'info') {
     const status = document.getElementById('status');
     status.className = `alert alert-${type}`;
+    status.innerText = message;
+  }
+
+  function setSetupStatus(message, type = 'info') {
+    const status = document.getElementById('setupStatus');
+    status.className = `alert alert-${type} mt-3 mb-0`;
     status.innerText = message;
   }
 
@@ -115,6 +310,97 @@
       .replaceAll("'", '&#039;');
   }
 
+  function integerFieldValue(id, fallback) {
+    const raw = document.getElementById(id).value;
+    const value = Number.parseInt(raw, 10);
+
+    return Number.isInteger(value) ? value : fallback;
+  }
+
+  function normaliseProjectName(value) {
+    return String(value || '').trim().toUpperCase();
+  }
+
+  function validateProjectName(value) {
+    if (!value) {
+      return;
+    }
+
+    if (!/^[A-Z0-9_]{1,8}$/.test(value)) {
+      throw new Error('C-Bus Project Name must use A-Z, 0-9, or underscore, with a maximum of 8 characters.');
+    }
+
+    if (RESERVED_PROJECT_NAMES.has(value) || /^CMD[0-9]+$/.test(value) || /^[0-9_]{1,8}$/.test(value)) {
+      throw new Error(`C-Bus Project Name '${value}' is reserved or invalid in C-Gate.`);
+    }
+  }
+
+  function readSetupFields(options = {}) {
+    const requireProjectName = options.requireProjectName !== false;
+    const clientCbusName = normaliseProjectName(
+      document.getElementById('clientCbusName').value
+    );
+
+    if (requireProjectName && !clientCbusName) {
+      throw new Error('Enter a C-Bus Project Name and save the C-Gate settings before loading discovery.');
+    }
+
+    validateProjectName(clientCbusName);
+
+    return {
+      name: document.getElementById('pluginName').value.trim() || 'Clipsal C-Gate',
+      client_ip_address: document.getElementById('clientIpAddress').value.trim() || '127.0.0.1',
+      client_controlport: integerFieldValue('clientControlPort', 20023),
+      client_cbusname: clientCbusName,
+      client_network: integerFieldValue('clientNetwork', 254),
+      client_application: integerFieldValue('clientApplication', 56),
+      client_debug: document.getElementById('clientDebug').checked,
+      autoDiscover: document.getElementById('autoDiscover').checked,
+      discoveryDefaultType: document.getElementById('discoveryDefaultType').value || 'light',
+      discoveryCacheEnabled: document.getElementById('discoveryCacheEnabled').checked,
+      discoveryCachePath: document.getElementById('discoveryCachePath').value.trim(),
+      platform_export: document.getElementById('platformExportPath').value.trim(),
+      database_export: document.getElementById('databaseExportPath').value.trim()
+    };
+  }
+
+  function syncSetupFields() {
+    const config = {
+      ...createDefaultPlatformConfig(),
+      ...(platformConfig || {})
+    };
+
+    document.getElementById('pluginName').value = config.name || 'Clipsal C-Gate';
+    document.getElementById('clientCbusName').value = config.client_cbusname || '';
+    document.getElementById('clientIpAddress').value = config.client_ip_address || '127.0.0.1';
+    document.getElementById('clientControlPort').value = config.client_controlport || 20023;
+    document.getElementById('clientNetwork').value = config.client_network || 254;
+    document.getElementById('clientApplication').value = config.client_application || 56;
+    document.getElementById('discoveryDefaultType').value = config.discoveryDefaultType || 'light';
+    document.getElementById('discoveryCachePath').value = config.discoveryCachePath || '';
+    document.getElementById('discoveryCacheEnabled').checked = config.discoveryCacheEnabled !== false;
+    document.getElementById('autoDiscover').checked = config.autoDiscover !== false;
+    document.getElementById('clientDebug').checked = config.client_debug === true;
+    document.getElementById('platformExportPath').value = config.platform_export || '';
+    document.getElementById('databaseExportPath').value = config.database_export || '';
+
+    updateSetupReadiness();
+  }
+
+  function updateSetupReadiness() {
+    const projectName = normaliseProjectName(
+      document.getElementById('clientCbusName').value
+    );
+
+    document.getElementById('loadBtn').disabled = !projectName;
+
+    if (!projectName) {
+      setSetupStatus('Enter the C-Bus project name before loading discovery.', 'warning');
+    } else {
+      setSetupStatus('Save these settings, click the purple Save button, then restart Homebridge to generate the discovery cache.', 'info');
+    }
+  }
+
   async function loadPluginConfig() {
     pluginConfigArray = await homebridge.getPluginConfig();
 
@@ -123,28 +409,17 @@
     }
 
     if (pluginConfigArray.length === 0) {
-      platformConfig = {
-        platform: 'CBus',
-        name: 'Clipsal C-Gate',
-        client_ip_address: '127.0.0.1',
-        client_controlport: 20023,
-        client_cbusname: '',
-        client_network: 254,
-        client_application: 56,
-        client_debug: false,
-        autoDiscover: true,
-        discoveryDefaultType: 'light',
-        discoveryCacheEnabled: true,
-        discoveryCachePath: '',
-        discoveredAccessories: [],
-        accessories: []
-      };
+      platformConfig = createDefaultPlatformConfig();
 
       pluginConfigArray = [platformConfig];
+      syncSetupFields();
       return;
     }
 
-    platformConfig = pluginConfigArray[0];
+    platformConfig = {
+      ...createDefaultPlatformConfig(),
+      ...pluginConfigArray[0]
+    };
 
     if (!Array.isArray(platformConfig.discoveredAccessories)) {
       platformConfig.discoveredAccessories = [];
@@ -153,6 +428,8 @@
     if (!Array.isArray(platformConfig.accessories)) {
       platformConfig.accessories = [];
     }
+
+    syncSetupFields();
   }
 
   function getSelectionsMap() {
@@ -173,12 +450,62 @@
     return map;
   }
 
+  async function saveSetupSettings() {
+    try {
+      homebridge.showSpinner();
+      setSetupStatus('Saving C-Gate settings...', 'info');
+
+      if (!platformConfig) {
+        await loadPluginConfig();
+      }
+
+      platformConfig = {
+        ...platformConfig,
+        ...readSetupFields()
+      };
+
+      pluginConfigArray[0] = platformConfig;
+
+      await homebridge.updatePluginConfig(pluginConfigArray);
+
+      syncSetupFields();
+
+      setSetupStatus(
+        'C-Gate settings prepared. Click the purple Save button, then restart Homebridge to generate the discovery cache.',
+        'success'
+      );
+
+      homebridge.toast.success(
+        'C-Gate settings prepared. Click Save to apply.',
+        'C-Bus'
+      );
+    } catch (err) {
+      console.error(err);
+
+      setSetupStatus(err.message || String(err), 'danger');
+
+      homebridge.toast.error(
+        err.message || String(err),
+        'C-Gate Settings'
+      );
+    } finally {
+      homebridge.hideSpinner();
+    }
+  }
+
   async function loadDiscoveryCache() {
     try {
       homebridge.showSpinner();
       setStatus('Loading discovery cache...', 'info');
 
-      await loadPluginConfig();
+      if (!platformConfig) {
+        await loadPluginConfig();
+      }
+
+      platformConfig = {
+        ...platformConfig,
+        ...readSetupFields()
+      };
 
       const result = await homebridge.request(
         '/read-discovery-cache',
@@ -355,13 +682,15 @@
       homebridge.showSpinner();
       setStatus('Updating selected accessories...', 'info');
 
-      await loadPluginConfig();
+      if (!platformConfig) {
+        await loadPluginConfig();
+      }
 
       const selectedAccessories = buildSelectedAccessories();
 
       platformConfig = {
         ...platformConfig,
-        autoDiscover: true,
+        ...readSetupFields({ requireProjectName: false }),
         discoveredAccessories: selectedAccessories
       };
 
@@ -399,8 +728,19 @@
     .addEventListener('click', loadDiscoveryCache);
 
   document
+    .getElementById('saveSettingsBtn')
+    .addEventListener('click', saveSetupSettings);
+
+  document
     .getElementById('saveBtn')
     .addEventListener('click', saveSelectedAccessories);
+
+  document
+    .getElementById('clientCbusName')
+    .addEventListener('input', event => {
+      event.target.value = normaliseProjectName(event.target.value);
+      updateSetupReadiness();
+    });
 
   document
     .getElementById('selectAllBtn')
