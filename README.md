@@ -4,15 +4,16 @@
 
 # homebridge-cbus-v2
 
-Homebridge v2 compatible maintenance fork of `homebridge-cbus` for Clipsal C-Bus / C-Gate.
+Homebridge 2.x compatible C-Bus / Clipsal C-Gate platform plugin.
 
-## What changed
+This plugin connects Homebridge to a Clipsal C-Bus installation through C-Gate, discovers C-Bus groups, and lets you choose which groups should appear in HomeKit.
 
-- Removed plugin-level `process.exit()` calls that crash Homebridge v2
-- Replaced legacy inheritance helpers incompatible with class-based Homebridge Accessory
-- Updated plugin startup handling for Homebridge v2
-- Added `config.schema.json` so Homebridge UI can render plugin configuration
-- Cleaned package for sharing (removed caches, auth, backups, logs, and `node_modules`)
+## Requirements
+
+- Homebridge 2.x
+- Node.js 18 or newer
+- A running C-Gate server
+- The C-Gate project name from Toolkit/C-Gate
 
 ## Install from GitHub
 
@@ -20,61 +21,157 @@ Homebridge v2 compatible maintenance fork of `homebridge-cbus` for Clipsal C-Bus
 npm install github:pktechnology-code/homebridge-cbus-plugin
 ```
 
-Or replace the existing `homebridge-cbus` folder manually for local testing.
+Or install/update it through the Homebridge UI if you are using this repository as the plugin source.
 
-## Configuration
+## Basic Configuration
 
-Existing configurations should continue to work:
+The platform alias is `CBus`.
+
+Example:
 
 ```json
 {
-  "platform": "homebridge-cbus.CBus"
+  "platform": "CBus",
+  "name": "Clipsal C-Gate",
+  "client_ip_address": "127.0.0.1",
+  "client_controlport": 20023,
+  "client_cbusname": "MYHOUSE",
+  "client_network": 254,
+  "client_application": 56,
+  "discoveryCacheEnabled": true,
+  "discoveredAccessories": []
 }
 ```
 
+Replace `MYHOUSE` with your actual C-Gate project name. Project names are usually uppercase and are limited by C-Gate naming rules.
+
+## Homebridge UI Workflow
+
+Open the plugin settings in Homebridge. The custom UI is designed to work in this order:
+
+1. Enter the C-Gate connection settings.
+2. Click **Apply Settings**.
+3. Click **Discover Accessories**.
+4. Tick the accessories you want exposed to HomeKit.
+5. Optionally add accessories manually if they were not discovered.
+6. Click **Save Selected Accessories**.
+7. Click the purple Homebridge **Save** button.
+8. Restart Homebridge.
+
+Important: **Apply Settings** and **Save Selected Accessories** prepare the plugin configuration inside the Homebridge UI. The purple Homebridge **Save** button is still the final step that writes the changes to `config.json`.
+
 ## Discovery Cache
 
-The plugin can export a JSON cache of all C-Bus groups found in C-Gate.
+Discovery reads the C-Gate database and creates a JSON cache of C-Bus groups.
 
-This is useful when you want to see all available C-Bus group IDs and names before deciding which ones to expose to HomeKit.
+If **Discovery Cache Output Path** is blank, the cache is written to the Homebridge storage folder:
 
-Enable discovery cache export in the plugin settings:
+```text
+cbus-discovery-cache.json
+```
 
-```json
-{
-  "discoveryCacheEnabled": true
-}
+On many systems this will look like:
 
-## Discovered Accessories Selection
+```text
+/volume1/homebridge/cbus-discovery-cache.json
+```
 
-Version 2.3.0 adds a GUI-editable discovered accessories list.
+You can set a custom cache path in **Advanced** if needed.
 
-After generating the discovery cache, copy selected groups into `discoveredAccessories`:
+The cache is useful for reviewing all C-Bus groups and names before selecting accessories.
 
-```json
-{
-  "discoveredAccessories": [
-    {
-      "enabled": true,
-      "id": "6",
-      "name": "Fireplace",
-      "type": "light"
-    },
-    {
-      "enabled": true,
-      "id": "90",
-      "name": "Garage Door",
-      "type": "switch",
-      "activeDuration": "1 sec"
-    }
-  ]
-}
+## Manual Accessories
 
+If an accessory is not found during discovery, use the manual entry row in the UI.
+
+Manual entries need:
+
+- ID: the C-Bus group address
+- Name: the HomeKit accessory name
+- Type: light, dimmer, switch, fan, motion, security, shutter, trigger, smoke, contact, or temperature
+- Active Duration: optional, for momentary actions such as garage doors or triggers
+
+After adding a manual accessory, click **Save Selected Accessories**, then the purple Homebridge **Save** button.
+
+## Accessory Types
+
+Supported accessory types include:
+
+- `light`
+- `dimmer`
+- `switch`
+- `fan`
+- `motion`
+- `security`
+- `shutter`
+- `trigger`
+- `smoke`
+- `contact`
+- `temperature`
+
+## Advanced Options
+
+Most users can leave the Advanced section alone.
+
+### Discovery Cache Output Path
+
+Optional full path for the discovery cache JSON file. Leave blank to use the Homebridge storage folder.
+
+### Platform Export Path
+
+Optional developer/helper export. It writes a generated Homebridge platform configuration scaffold based on the C-Gate database and current plugin configuration.
+
+Most users do not need this.
+
+### Database Export Path
+
+Optional developer/debug export. It writes the parsed C-Gate database, including applications, groups, units, and unrecognised unit types.
+
+Most users do not need this.
+
+### Enable C-Gate Debug Logging
+
+Turns on verbose C-Gate client logging for troubleshooting.
+
+## Troubleshooting
+
+### Discovery does not find anything
+
+Check:
+
+- C-Gate is running.
+- `client_ip_address` points to the C-Gate host.
+- `client_controlport` is usually `20023`.
+- `client_cbusname` exactly matches the C-Gate project name.
+- `client_network` and `client_application` match your installation.
+
+### Avahi error in Homebridge logs
+
+You may see:
+
+```text
+Failed to create listener for avahi-daemon server state
+Error message: Error: No such interface found
+```
+
+This is not a C-Bus plugin error. It comes from Homebridge/mDNS networking. Homebridge may still run, but HomeKit network discovery can be unreliable until Avahi/mDNS and the host network interface are configured correctly.
+
+### Changes do not appear in HomeKit
+
+After selecting or manually adding accessories:
+
+1. Click **Save Selected Accessories**.
+2. Click the purple Homebridge **Save** button.
+3. Restart Homebridge.
+
+## Development
+
+Run the syntax checks:
+
+```bash
+npm test
+```
 
 ## Status
 
-This is a Homebridge v2 compatibility fork. It resolves startup failures seen in Homebridge v2 environments.
-
-Further testing across different C-Bus accessory types is recommended before publishing to npm.
-
-
+This is a Homebridge 2.x compatible maintenance fork of the original `homebridge-cbus` plugin. Further testing across different C-Bus installations and accessory types is recommended.
