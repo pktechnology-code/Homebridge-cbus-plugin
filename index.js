@@ -71,8 +71,12 @@ module.exports = function (homebridge) {
 // CBusPlatform
 // ==========================================================================================
 
-function CBusPlatform(ignoredLog, config) {
+function CBusPlatform(ignoredLog, config, api) {
 	this.config = config || {};
+	this.api = api;
+	this.storagePath = (api && api.user && typeof api.user.storagePath === 'function')
+		? api.user.storagePath()
+		: process.cwd();
 
 	this.registeredAccessories = undefined;
 	this.client = undefined;
@@ -100,6 +104,18 @@ function CBusPlatform(ignoredLog, config) {
 		logClient.enable(this.config.client_debug);
 	}
 }
+
+CBusPlatform.prototype._isDiscoveryCacheEnabled = function () {
+	if (typeof this.config.discoveryCacheEnabled !== 'undefined') {
+		return this.config.discoveryCacheEnabled !== false;
+	}
+
+	if (typeof this.config.discovery_cache_enabled !== 'undefined') {
+		return this.config.discovery_cache_enabled !== false;
+	}
+
+	return true;
+};
 
 CBusPlatform.prototype._processEvent = function (message) {
 	if (message.netId) {
@@ -170,9 +186,9 @@ CBusPlatform.prototype.accessories = function (callback) {
 				new CGateExport(this.database).exportDatabase(this.config.database_export);
 			}
 
-			if (this.config.discoveryCacheEnabled || this.config.discovery_cache_enabled) {
+			if (this._isDiscoveryCacheEnabled()) {
 				try {
-					this.config.storagePath = this.config.storagePath || process.cwd();
+					this.config.storagePath = this.config.storagePath || this.storagePath || process.cwd();
 
 					const result = DiscoveryCache.writeDiscoveryCache(this);
 
