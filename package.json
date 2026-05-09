@@ -22,6 +22,19 @@
     "cgate",
     "homekit"
   ],
+  "files": [
+    "accessories/",
+    "homebridge-ui/",
+    "lib/",
+    "resources/",
+    "scripts/",
+    "config.schema.json",
+    "index.js",
+    "hot-debug.js",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "engines": {
     "node": ">=18.0.0",
     "homebridge": ">=2.0.0"
@@ -41,7 +54,8 @@
   },
   "devDependencies": {},
   "scripts": {
-    "test": "node -c index.js && node -c lib/discovery-cache.js && node -c homebridge-ui/server.js"
+    "test": "npm run validate",
+    "validate": "node scripts/validate-package.js"
   },
   "homebridge": {
     "pluginAlias": "CBus",

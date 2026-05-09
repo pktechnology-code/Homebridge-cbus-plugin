@@ -13,6 +13,7 @@ class CBusUiServer extends HomebridgePluginUiServer {
 		super();
 
 		this.onRequest('/read-discovery-cache', this.readDiscoveryCache.bind(this));
+		this.onRequest('/test-cgate-connection', this.testCgateConnection.bind(this));
 		this.onRequest('/discover-accessories', this.discoverAccessories.bind(this));
 
 		this.ready();
@@ -89,6 +90,47 @@ class CBusUiServer extends HomebridgePluginUiServer {
 		});
 	}
 
+	async withCgateDatabase(payload, handler) {
+		let client;
+
+		try {
+			const config = this.normaliseDiscoveryConfig(payload);
+
+			client = new CGateClient(
+				config.client_ip_address,
+				config.client_controlport,
+				config.client_cbusname,
+				config.client_network,
+				config.client_application,
+				config.client_debug === true
+			);
+
+			const database = new CGateDatabase(new CBusNetId(config.client_cbusname));
+
+			await this.withTimeout(
+				this.connectClient(client),
+				15000,
+				`Timed out connecting to C-Gate at ${config.client_ip_address}:${config.client_controlport}.`
+			);
+
+			await this.withTimeout(
+				this.fetchDatabase(database, client),
+				30000,
+				'Timed out fetching the C-Gate database.'
+			);
+
+			return await handler({ config, database });
+		} finally {
+			if (client && client.socket) {
+				try {
+					client.disconnect();
+				} catch (err) {
+					// Best-effort cleanup after C-Gate requests.
+				}
+			}
+		}
+	}
+
 	async readDiscoveryCache(payload) {
 		const requestedPath = payload && payload.discoveryCachePath
 			? String(payload.discoveryCachePath).trim()
@@ -139,71 +181,55 @@ class CBusUiServer extends HomebridgePluginUiServer {
 		);
 	}
 
-	async discoverAccessories(payload) {
-		let client;
-
+	async testCgateConnection(payload) {
 		try {
-			const config = this.normaliseDiscoveryConfig(payload);
-			const project = config.client_cbusname;
-			const network = config.client_network;
-			const application = config.client_application;
-
-			client = new CGateClient(
-				config.client_ip_address,
-				config.client_controlport,
-				project,
-				network,
-				application,
-				config.client_debug === true
+			return await this.withCgateDatabase(payload, ({ config, database }) => ({
+				host: config.client_ip_address,
+				port: config.client_controlport,
+				project: config.client_cbusname,
+				stats: database.getStats()
+			}));
+		} catch (err) {
+			throw new RequestError(
+				`C-Gate test failed: ${err.message || err}`,
+				{ status: 500 }
 			);
+		}
+	}
 
-			const database = new CGateDatabase(new CBusNetId(project));
+	async discoverAccessories(payload) {
+		try {
+			return await this.withCgateDatabase(payload, ({ config, database }) => {
+				const project = config.client_cbusname;
+				const network = config.client_network;
+				const application = config.client_application;
 
-			await this.withTimeout(
-				this.connectClient(client),
-				15000,
-				`Timed out connecting to C-Gate at ${config.client_ip_address}:${config.client_controlport}.`
-			);
+				const platform = {
+					config: {
+						...config,
+						storagePath: this.homebridgeStoragePath || process.cwd()
+					},
+					database,
+					project,
+					network,
+					application
+				};
 
-			await this.withTimeout(
-				this.fetchDatabase(database, client),
-				30000,
-				'Timed out fetching the C-Gate database.'
-			);
+				let pathWritten;
+				if (config.discoveryCacheEnabled !== false) {
+					pathWritten = DiscoveryCache.writeDiscoveryCache(platform).path;
+				}
 
-			const platform = {
-				config: {
-					...config,
-					storagePath: this.homebridgeStoragePath || process.cwd()
-				},
-				database,
-				project,
-				network,
-				application
-			};
-
-			let pathWritten;
-			if (config.discoveryCacheEnabled !== false) {
-				pathWritten = DiscoveryCache.writeDiscoveryCache(platform).path;
-			}
-
-			return {
-				path: pathWritten,
-				cache: DiscoveryCache.buildDiscoveryCache(platform)
-			};
+				return {
+					path: pathWritten,
+					cache: DiscoveryCache.buildDiscoveryCache(platform)
+				};
+			});
 		} catch (err) {
 			throw new RequestError(
 				`Discovery failed: ${err.message || err}`,
 				{ status: 500 }
 			);
-		} finally {
-			if (client && client.socket) {
-				try {
-					client.disconnect();
-				} catch (err) {
-					// Best-effort cleanup after discovery.
-				}
-			}
 		}
 	}
 }

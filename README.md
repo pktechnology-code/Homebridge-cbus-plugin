@@ -51,12 +51,13 @@ Open the plugin settings in Homebridge. The custom UI is designed to work in thi
 
 1. Enter the C-Gate connection settings.
 2. Click **Apply Settings**.
-3. Click **Discover Accessories**.
-4. Tick the accessories you want exposed to HomeKit.
-5. Optionally add accessories manually if they were not discovered.
-6. Click **Save Selected Accessories**.
-7. Click the purple Homebridge **Save** button.
-8. Restart Homebridge.
+3. Click **Test C-Gate Settings** to confirm Homebridge can connect to C-Gate and read the project database.
+4. Click **Discover Accessories**.
+5. Tick the accessories you want exposed to HomeKit.
+6. Optionally add accessories manually if they were not discovered.
+7. Click **Save Selected Accessories**.
+8. Click the purple Homebridge **Save** button.
+9. Restart Homebridge.
 
 Important: **Apply Settings** and **Save Selected Accessories** prepare the plugin configuration inside the Homebridge UI. The purple Homebridge **Save** button is still the final step that writes the changes to `config.json`.
 
@@ -171,6 +172,17 @@ Run the syntax checks:
 ```bash
 npm test
 ```
+
+The test script validates the package metadata, schema JSON, server JavaScript, custom UI script, and release files. GitHub Actions runs the same check on pushes and pull requests.
+
+Before publishing a release:
+
+```bash
+npm test
+npm pack --dry-run
+```
+
+Confirm the package version, git tag, and npm version all match.
 
 ## Status
 
