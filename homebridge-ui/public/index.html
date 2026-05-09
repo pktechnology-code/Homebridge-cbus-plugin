@@ -32,7 +32,7 @@
 
     <div id="helpPanel" class="alert alert-info d-none">
       <strong>Workflow:</strong>
-      apply the C-Gate settings, discover accessories, choose or manually add the accessories to expose, click Save Selected Accessories, then click the purple Homebridge Save button and restart Homebridge.
+      apply the C-Gate settings, test the connection, discover accessories, choose or manually add the accessories to expose, click Save Selected Accessories, then click the purple Homebridge Save button and restart Homebridge.
     </div>
 
     <div class="border-bottom pb-3 mb-3">
@@ -202,6 +202,10 @@
       <div class="mt-3">
         <button id="saveSettingsBtn" class="btn btn-primary">
           Apply Settings
+        </button>
+
+        <button id="testSettingsBtn" class="btn btn-outline-secondary ms-2">
+          Test C-Gate Settings
         </button>
       </div>
 
@@ -516,8 +520,10 @@
     const projectName = normaliseProjectName(
       document.getElementById('clientCbusName').value
     );
+    const canUseCgate = Boolean(projectName && settingsApplied);
 
-    document.getElementById('loadBtn').disabled = !projectName;
+    document.getElementById('loadBtn').disabled = !canUseCgate;
+    document.getElementById('testSettingsBtn').disabled = !canUseCgate;
 
     if (!projectName) {
       setSetupStatus('Step 1 needs a C-Bus project name before discovery can run.', 'warning');
@@ -525,7 +531,7 @@
       document.getElementById('loadBtn').disabled = true;
       setSetupStatus('Apply settings before discovering accessories.', 'warning');
     } else {
-      setSetupStatus('Settings applied. Discover Accessories can now connect to C-Gate.', 'success');
+      setSetupStatus('Settings applied. Test the C-Gate settings or discover accessories.', 'success');
     }
   }
 
@@ -604,7 +610,7 @@
       syncSetupFields();
 
       setSetupStatus(
-        'Settings applied. Discover Accessories can now connect to C-Gate.',
+        'Settings applied. Test the C-Gate settings or discover accessories.',
         'success'
       );
 
@@ -621,6 +627,54 @@
         err.message || String(err),
         'C-Gate Settings'
       );
+    }
+  }
+
+  async function testCgateSettings() {
+    try {
+      homebridge.showSpinner();
+      setSetupStatus('Testing C-Gate settings...', 'info');
+
+      if (!platformConfig) {
+        await loadPluginConfig();
+      }
+
+      if (!settingsApplied) {
+        throw new Error('Apply settings before testing the C-Gate connection.');
+      }
+
+      platformConfig = {
+        ...platformConfig,
+        ...readSetupFields()
+      };
+
+      const result = await homebridge.request(
+        '/test-cgate-connection',
+        platformConfig
+      );
+
+      const stats = result.stats || {};
+
+      setSetupStatus(
+        `C-Gate test passed for ${result.project} at ${result.host}:${result.port}. Database has ${stats.numGroups || 0} groups, ${stats.numUnits || 0} units, and ${stats.numApplications || 0} applications.`,
+        'success'
+      );
+
+      homebridge.toast.success(
+        'C-Gate test passed.',
+        'C-Bus'
+      );
+    } catch (err) {
+      console.error(err);
+
+      setSetupStatus(err.message || String(err), 'danger');
+
+      homebridge.toast.error(
+        err.message || String(err),
+        'C-Gate Test'
+      );
+    } finally {
+      homebridge.hideSpinner();
     }
   }
 
@@ -949,6 +1003,10 @@
   document
     .getElementById('saveSettingsBtn')
     .addEventListener('click', saveSetupSettings);
+
+  document
+    .getElementById('testSettingsBtn')
+    .addEventListener('click', testCgateSettings);
 
   document
     .getElementById('saveBtn')
