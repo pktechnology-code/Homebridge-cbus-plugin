@@ -4,6 +4,8 @@
 
 # homebridge-cbus-v2
 
+![homebridge-cbus-v2 plugin UI](cbus-plugin.png)
+
 Homebridge 2.x compatible C-Bus / Clipsal C-Gate platform plugin.
 
 This plugin connects Homebridge to a Clipsal C-Bus installation through C-Gate, discovers C-Bus groups, and lets you choose which groups should appear in HomeKit.
