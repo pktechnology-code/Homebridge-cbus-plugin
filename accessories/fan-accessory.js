@@ -68,6 +68,7 @@ function CBusFanAccessory(platform, accessoryData) {
 
 CBusFanAccessory.prototype.getOn = function (callback) {
 	this.client.receiveLevel(this.netId, message => {
+		if (this._handleClientResponseError(message, callback, 'getOn')) return;
 		this._log(FILE_ID, `getOn receiveLevel returned ${message.level}%`);
 		this.isOn = (message.level > 0);
 		if (this.isOn) {
@@ -99,8 +100,8 @@ CBusFanAccessory.prototype.setOn = function (turnOn, callback, context) {
 					callback();
 				} else {
 					this._log(FILE_ID, `setOn`, `changing level to ${speed}%`);
-					this.client.setLevel(this.netId, speed, function () {
-						callback();
+					this.client.setLevel(this.netId, speed, message => {
+						if (!this._handleClientResponseError(message, callback, 'setOn')) callback();
 					}, 0, `setOn`);
 				}
 			}
@@ -110,6 +111,7 @@ CBusFanAccessory.prototype.setOn = function (turnOn, callback, context) {
 
 CBusFanAccessory.prototype.getSpeed = function (callback) {
 	this.client.receiveLevel(this.netId, message => {
+		if (this._handleClientResponseError(message, callback, 'getSpeed')) return;
 		const speed = message.level;
 		this._log(FILE_ID, `getSpeed`, `receiveLevel returned ${speed}%`);
 		this.isOn = (speed > 0);
@@ -139,8 +141,8 @@ CBusFanAccessory.prototype.setSpeed = function (newSpeed, callback, context) {
 			callback();
 		} else {
 			this._log(FILE_ID, `setSpeed`, `changing speed to ${newSpeed}%`);
-			this.client.setLevel(this.netId, newSpeed, function () {
-				callback();
+			this.client.setLevel(this.netId, newSpeed, message => {
+				if (!this._handleClientResponseError(message, callback, 'setSpeed')) callback();
 			}, 0, `setSpeed`);
 		}
 	}

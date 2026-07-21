@@ -45,6 +45,7 @@ function CBusLightAccessory(platform, accessoryData) {
 
 CBusLightAccessory.prototype.getOn = function (callback) {
 	this.client.receiveLevel(this.netId, message => {
+		if (this._handleClientResponseError(message, callback, 'getOn')) return;
 		this.isOn = (message.level > 0);
 		this._log(FILE_ID, `getOn`, `receiveLevel returned ${message.level}`);
 		callback(false, this.isOn ? 1 : 0);
@@ -71,8 +72,8 @@ CBusLightAccessory.prototype.setOn = function (turnOn, callback, context) {
 				const reasonExtension = turnOn ? ((this.brightness === 100) ? `on` : `restore`) : `off`;
 
 				this._log(FILE_ID, `setOn`, `changing level to ${newLevel}%`);
-				this.client.setLevel(this.netId, newLevel, () => {
-					callback();
+				this.client.setLevel(this.netId, newLevel, message => {
+					if (!this._handleClientResponseError(message, callback, 'setOn')) callback();
 				}, this.rampDuration / 1000, `setOn (${reasonExtension})`);
 			}
 		}

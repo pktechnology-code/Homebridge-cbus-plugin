@@ -44,6 +44,7 @@ function CBusSwitchAccessory(platform, accessoryData) {
 
 CBusSwitchAccessory.prototype.getOn = function (callback) {
 	this.client.receiveLevel(this.netId, message => {
+		if (this._handleClientResponseError(message, callback, 'getOn')) return;
 		this.isOn = message.level > 0;
 		this._log(FILE_ID, `getOn`, `status = '${this.isOn ? `on` : `off`}'`);
 		callback(false, this.isOn ? 1 : 0);
@@ -64,7 +65,8 @@ CBusSwitchAccessory.prototype.setOn = function (turnOn, callback, context) {
 			callback();
 		} else if (turnOn) {
 			this._log(FILE_ID, `setOn(true)`, `changing to 'on'`);
-			this.client.turnOn(this.netId, () => {
+			this.client.turnOn(this.netId, message => {
+				if (this._handleClientResponseError(message, callback, 'setOn')) return;
 				if (this.activeDuration) {
 					this.timeout = setTimeout(() => {
 						this._log(FILE_ID, `activity timer expired`, `turning off`);
@@ -78,8 +80,8 @@ CBusSwitchAccessory.prototype.setOn = function (turnOn, callback, context) {
 		} else {
 			// turnOn === false, ie. turn off
 			this._log(FILE_ID, `setOn(false)`, `changing to 'off'`);
-			this.client.turnOff(this.netId, () => {
-				callback();
+			this.client.turnOff(this.netId, message => {
+				if (!this._handleClientResponseError(message, callback, 'setOn')) callback();
 			});
 		}
 	}

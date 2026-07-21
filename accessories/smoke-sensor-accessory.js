@@ -33,7 +33,8 @@ function CBusSmokeAccessory(platform, accessoryData) {
 
 CBusSmokeAccessory.prototype.getMotionState = function (callback) {
 	this.client.receiveLevel(this.netId, message => {
-		this._log(FILE_ID, `getState`, message.level);
+		if (this._handleClientResponseError(message, callback, 'getSmokeState')) return;
+			this._log(FILE_ID, `getState`, message.level);
 		callback(false, /* state: */ message.level ? 1 : 0);
 	});
 };

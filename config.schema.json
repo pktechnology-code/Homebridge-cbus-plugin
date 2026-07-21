@@ -22,6 +22,8 @@
         "title": "C-Gate Control Port",
         "type": "integer",
         "default": 20023,
+        "minimum": 1,
+        "maximum": 65535,
         "required": true
       },
       "client_cbusname": {
@@ -37,12 +39,16 @@
         "title": "C-Bus Network",
         "type": "integer",
         "default": 254,
+        "minimum": 0,
+        "maximum": 255,
         "required": true
       },
       "client_application": {
         "title": "C-Bus Application",
         "type": "integer",
         "default": 56,
+        "minimum": 0,
+        "maximum": 255,
         "required": true
       },
       "client_debug": {
@@ -97,25 +103,35 @@
               "default": true
             },
             "id": {
-              "type": "string"
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^[0-9]{1,3}$"
             },
             "name": {
-              "type": "string"
+              "type": "string",
+              "minLength": 1
             },
             "type": {
-              "type": "string"
+              "type": "string",
+              "enum": ["light", "dimmer", "switch", "fan", "motion", "security", "shutter", "trigger", "smoke", "contact", "temperature"]
             },
             "activeDuration": {
               "type": "string"
             },
             "network": {
-              "type": "integer"
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 255
             },
             "application": {
-              "type": "integer"
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 255
             },
             "channel": {
-              "type": "integer"
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 7
             }
           }
         }

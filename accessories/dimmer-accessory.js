@@ -45,6 +45,7 @@ function CBusDimmerAccessory(platform, accessoryData) {
 
 CBusDimmerAccessory.prototype.getBrightness = function (callback) {
 	this.client.receiveLevel(this.netId, message => {
+		if (this._handleClientResponseError(message, callback, 'getBrightness')) return;
 		this._log(FILE_ID, `getBrightness`, `returned ${message.level}%`);
 
 		if (message.level) {
@@ -70,8 +71,8 @@ CBusDimmerAccessory.prototype.setBrightness = function (newLevel, callback, cont
 			callback();
 		} else {
 			this._log(FILE_ID, `setBrightness`, `changing level to ${newLevel}%`);
-			this.client.setLevel(this.netId, newLevel, function () {
-				callback();
+			this.client.setLevel(this.netId, newLevel, message => {
+				if (!this._handleClientResponseError(message, callback, 'setBrightness')) callback();
 			}, this.rampDuration / 1000, `setBrightness`);
 		}
 	}

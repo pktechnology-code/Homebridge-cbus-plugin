@@ -60,8 +60,8 @@ function CBusAccessory(platform, accessoryData) {
 	// build netId
 	this.netId = new CBusNetId(
 		platform.project,
-		accessoryData.network || platform.client.network,
-		accessoryData.application || platform.client.application,
+		accessoryData.network ?? platform.client.network,
+		accessoryData.application ?? platform.client.application,
 		groupAddress,
 		accessoryData.channel
 	);
@@ -88,4 +88,20 @@ CBusAccessory.prototype._log = function (file, action, message) {
 	const fileName = file.split(`-`)[0];
 	const accessoryLabel = cbusUtils.formatTag(this.name, this.netId);
 	log(`${chalk.gray.bold(fileName)} ${accessoryLabel} ${chalk.red(action)} ${message}`);
+};
+
+CBusAccessory.prototype._handleClientResponseError = function (message, callback, action) {
+	if (message && !message.error) {
+		return false;
+	}
+
+	const error = message && message.error
+		? message.error
+		: new Error('C-Gate did not return a response.');
+	this._log('client', action, error.message);
+
+	if (typeof callback === 'function') {
+		callback(error);
+	}
+	return true;
 };

@@ -34,18 +34,17 @@ function CBusContactAccessory(platform, accessoryData) {
 
 CBusContactAccessory.prototype.getMotionState = function (callback) {
 	this.client.receiveLevel(this.netId, message => {
-        this._log(FILE_ID, `getState`, message.level);
-        const level = message.level;
-        console.log("Contact Sensor level is=", level);
-		callback(false, /* state: */ message.level ? 1 : 0);
+		if (this._handleClientResponseError(message, callback, 'getContactState')) return;
+	        this._log(FILE_ID, `getState`, message.level);
+	        const level = message.level;
+			callback(false, /* state: */ message.level ? 1 : 0);
 	});
 };
 
 CBusContactAccessory.prototype.processClientData = function (err, message) {
 	if (!err) {
-        const level = message.level;
-        console.log("Contact Sensor level is=",level);
-        this.service.getCharacteristic(Characteristic.ContactSensorState)
+	        const level = message.level;
+	        this.service.getCharacteristic(Characteristic.ContactSensorState)
             .setValue((level > 0) ? 1 : 0);
 
 	}

@@ -1,7 +1,5 @@
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
 const { HomebridgePluginUiServer, RequestError } = require('@homebridge/plugin-ui-utils');
 const CGateClient = require('../lib/cgate-client.js');
 const CGateDatabase = require('../lib/cgate-database.js');
@@ -12,7 +10,6 @@ class CBusUiServer extends HomebridgePluginUiServer {
 	constructor() {
 		super();
 
-		this.onRequest('/read-discovery-cache', this.readDiscoveryCache.bind(this));
 		this.onRequest('/test-cgate-connection', this.testCgateConnection.bind(this));
 		this.onRequest('/discover-accessories', this.discoverAccessories.bind(this));
 
@@ -34,9 +31,9 @@ class CBusUiServer extends HomebridgePluginUiServer {
 		const config = payload && typeof payload === 'object' ? payload : {};
 		const project = CBusNetId.validatedProjectName(String(config.client_cbusname || '').trim().toUpperCase());
 		const host = String(config.client_ip_address || '127.0.0.1').trim();
-		const port = Number.parseInt(config.client_controlport || 20023, 10);
-		const network = Number.parseInt(config.client_network || 254, 10);
-		const application = Number.parseInt(config.client_application || 56, 10);
+		const port = Number.parseInt(config.client_controlport ?? 20023, 10);
+		const network = Number.parseInt(config.client_network ?? 254, 10);
+		const application = Number.parseInt(config.client_application ?? 56, 10);
 
 		if (!host) {
 			throw new Error('C-Gate Host is required.');
@@ -131,62 +128,15 @@ class CBusUiServer extends HomebridgePluginUiServer {
 		}
 	}
 
-	async readDiscoveryCache(payload) {
-		const requestedPath = payload && payload.discoveryCachePath
-			? String(payload.discoveryCachePath).trim()
-			: '';
-
-		const candidatePaths = [];
-
-		if (requestedPath !== '') {
-			candidatePaths.push(path.resolve(requestedPath));
-		}
-
-		if (this.homebridgeStoragePath) {
-			candidatePaths.push(
-				path.resolve(this.homebridgeStoragePath, 'cbus-discovery-cache.json')
-			);
-		}
-
-		candidatePaths.push(
-			path.resolve(process.cwd(), 'cbus-discovery-cache.json')
-		);
-
-		const uniquePaths = [...new Set(candidatePaths)];
-
-		for (const filePath of uniquePaths) {
-			try {
-				if (!fs.existsSync(filePath)) {
-					continue;
-				}
-
-				const raw = fs.readFileSync(filePath, 'utf8');
-				const parsed = JSON.parse(raw);
-
-				return {
-					path: filePath,
-					cache: parsed
-				};
-			} catch (err) {
-				throw new RequestError(
-					`Failed to read discovery cache at ${filePath}: ${err.message}`,
-					{ status: 500 }
-				);
-			}
-		}
-
-		throw new RequestError(
-			`Discovery cache not found. The cache is created when Homebridge starts and the C-Bus plugin successfully connects to C-Gate. Save the plugin config and restart Homebridge, or set Discovery Cache Output Path to a writable location. Tried: ${uniquePaths.join(', ')}`,
-			{ status: 404 }
-		);
-	}
-
 	async testCgateConnection(payload) {
+		const startedAt = Date.now();
 		try {
 			return await this.withCgateDatabase(payload, ({ config, database }) => ({
 				host: config.client_ip_address,
 				port: config.client_controlport,
 				project: config.client_cbusname,
+				checkedAt: new Date().toISOString(),
+				responseTimeMs: Date.now() - startedAt,
 				stats: database.getStats()
 			}));
 		} catch (err) {

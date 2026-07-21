@@ -12,6 +12,7 @@ const CGateDatabase = require(`./lib/cgate-database.js`);
 const CGateExport = require(`./lib/cgate-export.js`);
 const DiscoveryCache = require('./lib/discovery-cache.js');
 const AccessoryConfig = require('./lib/accessory-config.js');
+const EventUtils = require('./lib/event-utils.js');
 
 const CBusNetId = require(`./lib/cbus-netid.js`);
 
@@ -98,12 +99,10 @@ function CBusPlatform(ignoredLog, config, api) {
 
 	this.network = (typeof this.config.client_network === `undefined`) ? undefined : this.config.client_network;
 	this.application = (typeof this.config.client_application === `undefined`) ? undefined : this.config.client_application;
+	this.clientDebug = this.config.client_debug === true;
 
 	log.enable(true);
-
-	if (typeof this.config.client_debug !== `undefined`) {
-		logClient.enable(this.config.client_debug);
-	}
+	logClient.enable(this.clientDebug);
 }
 
 CBusPlatform.prototype._isDiscoveryCacheEnabled = function () {
@@ -124,7 +123,7 @@ CBusPlatform.prototype._processEvent = function (message) {
 
 		const accessory = this.registeredAccessories ? this.registeredAccessories[message.netId.toString()] : undefined;
 
-		if (!message.application === 'measurement') {
+		if (EventUtils.shouldLogLevelEvent(message)) {
 			const tag = this.database ? this.database.getTag(message.netId) : `NYI`;
 
 			if (accessory) {
@@ -145,10 +144,12 @@ CBusPlatform.prototype._processEvent = function (message) {
 			}
 		}
 
-		logLevel(output);
+		if (output) {
+			logLevel(output);
+		}
 
 		if (accessory) {
-			const err = (message.code !== 730 && !message.code === 702);
+			const err = !EventUtils.isSupportedAccessoryEvent(message);
 			accessory.processClientData(err, message);
 		}
 	} else if (message.code === 700) {

@@ -6,6 +6,7 @@ let CBusAccessory;
 let uuid;
 
 const cbusUtils = require('../lib/cbus-utils.js');
+const SecurityState = require('../lib/security-state.js');
 
 const FILE_ID = cbusUtils.extractIdentifierFromFileName(__filename);
 
@@ -31,11 +32,12 @@ function CBusSecurityAccessory(platform, accessoryData) {
 }
 
 CBusSecurityAccessory.prototype.getMotionState = function (callback) {
-	this.client.receiveSecurityStatus(this.id, message => {
+	this.client.receiveSecurityStatus(this.netId, message => {
+		if (this._handleClientResponseError(message, callback, 'getMotionState')) return;
 		let detected;
-		if (['zone_unsealed', 'zone_open', 'zone_short'].includes(message.zonestate)) {
+		if (SecurityState.isDetected(message.zonestate)) {
 			detected = 1;
-		} else if (message.zonestate === 'zone_sealed') {
+		} else if (SecurityState.isSealed(message.zonestate)) {
 			detected = 0;
 		}
 
@@ -46,7 +48,10 @@ CBusSecurityAccessory.prototype.getMotionState = function (callback) {
 
 CBusSecurityAccessory.prototype.processClientData = function (err, message) {
 	if (!err) {
+		const detected = typeof message.zonestate !== 'undefined'
+			? SecurityState.isDetected(message.zonestate)
+			: message.level > 0;
 		this.service.getCharacteristic(Characteristic.MotionDetected)
-			.setValue((message.level > 0) ? 1 : 0);
+			.setValue(detected ? 1 : 0);
 	}
 };

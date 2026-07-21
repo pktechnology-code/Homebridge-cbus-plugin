@@ -35,7 +35,7 @@ function CBusShutterAccessory(platform, accessoryData) {
 	//--------------------------------------------------
 	// state variables
 	// handle inversion
-	this.invert = accessoryData.invert || 'false';
+	this.invert = accessoryData.invert === true || accessoryData.invert === 'true';
 
 	// prime the last known position of the blinds
 	// assume the blinds were closed, but as soon as we can issue a receiveLightStatus to see
@@ -45,6 +45,7 @@ function CBusShutterAccessory(platform, accessoryData) {
 	setTimeout(() => {
 		this._log(FILE_ID, `construct`, `prime state`);
 		this.client.receiveLevel(this.netId, message => {
+			if (this._handleClientResponseError(message, undefined, 'prime')) return;
 			let translated = this.translateShutterToProportional(message.level);
 
 			if (typeof translated === `undefined`) {
@@ -87,7 +88,7 @@ CBusShutterAccessory.prototype.translateProportionalToShutter = function (level)
 	}
 
 	// invert if required
-	if (this.invert === 'true') {
+		if (this.invert) {
 		const invertedLevel = 100 - level;
 		this._log(FILE_ID, `translate`, `${level} inverted to ${invertedLevel}%`);
 		level = invertedLevel;
@@ -119,7 +120,7 @@ CBusShutterAccessory.prototype.translateProportionalToShutter = function (level)
 };
 
 CBusShutterAccessory.prototype.translateShutterToProportional = function (level) {
-	if (typeof level === undefined) {
+	if (typeof level === 'undefined') {
 		return undefined;
 	}
 
@@ -152,7 +153,7 @@ CBusShutterAccessory.prototype.translateShutterToProportional = function (level)
 	}
 
 	// invert if required
-	if ((typeof translated !== `undefined`) && (this.invert === true)) {
+	if ((typeof translated !== `undefined`) && this.invert) {
 		let invertedLevel = 100 - level;
 		this._log(FILE_ID, `translate`, `${level}% inverted to ${invertedLevel}%`);
 		translated = invertedLevel;
@@ -177,6 +178,7 @@ CBusShutterAccessory.prototype.getPositionState = function (callback) {
 
 CBusShutterAccessory.prototype.getTargetPosition = function (callback) {
 	this.client.receiveLevel(this.netId, result => {
+		if (this._handleClientResponseError(result, callback, 'getTargetPosition')) return;
 		let proportion = this.translateShutterToProportional(result.level);
 		this._log(FILE_ID, `getTargetPosition`, proportion);
 
@@ -230,7 +232,8 @@ CBusShutterAccessory.prototype.setTargetPosition = function (newPosition, callba
 		let shutterLevel = this.translateProportionalToShutter(newPosition);
 
 		// in this framework, the shutter relay position just looks like the brightness of a light
-		this.client.setLevel(this.netId, shutterLevel, () => {
+		this.client.setLevel(this.netId, shutterLevel, message => {
+			if (this._handleClientResponseError(message, callback, 'setTargetPosition')) return;
 			this._log(FILE_ID, `setTargetPosition`, 'sent to client: shutter = ' + shutterLevel);
 
 			// keep the spinner moving for a little while to give the sense of movement

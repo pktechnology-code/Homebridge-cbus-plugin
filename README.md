@@ -81,7 +81,7 @@ On many systems this will look like:
 
 You can set a custom cache path in **Advanced** if needed.
 
-The cache is useful for reviewing all C-Bus groups and names before selecting accessories.
+The cache is useful for reviewing all C-Bus groups and names before selecting accessories. Cache updates are written atomically with owner-only file permissions on supported systems.
 
 ## Manual Accessories
 
@@ -134,7 +134,13 @@ Most users do not need this.
 
 ### Enable C-Gate Debug Logging
 
-Turns on verbose C-Gate client logging for troubleshooting.
+Turns on verbose C-Gate client logging for troubleshooting. Leave this disabled during normal operation because raw C-Gate events may contain installation details.
+
+## Security
+
+C-Gate uses an unencrypted TCP connection without plugin-level authentication. Keep C-Gate and port `20023` on localhost or a trusted private network, and never expose the port directly to the internet. Use host firewall rules or network segmentation when Homebridge and C-Gate run on different systems.
+
+The plugin limits connection and command wait times, pending commands, incoming line sizes, and C-Gate database sizes. The custom UI uses bundled styling and does not require a third-party CDN.
 
 ## Troubleshooting
 
@@ -169,13 +175,13 @@ After selecting or manually adding accessories:
 
 ## Development
 
-Run the syntax checks:
+Run the automated tests and validation checks:
 
 ```bash
 npm test
 ```
 
-The test script validates the package metadata, schema JSON, server JavaScript, custom UI script, and release files. GitHub Actions runs the same check on pushes and pull requests.
+The test script covers configuration edge cases, event classification, security states, C-Gate handshakes and timeouts, command queue limits, oversized input handling, cache permissions, package metadata, schema JSON, server JavaScript, and the custom UI. GitHub Actions runs the same checks on pushes and pull requests.
 
 Before publishing a release:
 

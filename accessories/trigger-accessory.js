@@ -45,11 +45,14 @@ CBusTriggerAccessory.prototype.setTrigger = function (trigger, callback, context
 	} else {
 		console.assert((trigger === 1) || (trigger === 0) || (trigger === true) || (trigger === false));
 		if (trigger) {
-			this.client.triggerAction(this.netId, this.action, () => {
+			this.client.triggerAction(this.netId, this.action, message => {
+				if (this._handleClientResponseError(message, callback, 'setTrigger')) return;
 				this.timeout = setTimeout(() => {
 					this.service.getCharacteristic(Characteristic.On).setValue(0);
 				}, 500);
+				callback();
 			});		
+			return;
 		}
 		callback();
 	}
