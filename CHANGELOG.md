@@ -6,6 +6,11 @@
 - Added package validation and GitHub Actions checks.
 - Restored the MIT license text used by the package metadata.
 
+## 2.4.23
+
+- Fixed command-timeout completion under Node's test runner by keeping pending timers active until they resolve or are cleared.
+- Updated GitHub Actions validation from Node.js 20 to Node.js 24.
+
 ## 2.4.22
 
 - Fixed C-Gate level, measurement, and security event handling.
