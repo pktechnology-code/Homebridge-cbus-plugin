@@ -6,6 +6,10 @@
 - Added package validation and GitHub Actions checks.
 - Restored the MIT license text used by the package metadata.
 
+## 2.4.21
+
+- Fixed valid C-Bus accessories using group ID `0` being skipped during registration.
+
 ## 2.4.18
 
 - Reworked the Homebridge custom UI into a guided C-Gate setup, discovery, and accessory selection workflow.

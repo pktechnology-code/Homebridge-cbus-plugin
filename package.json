@@ -1,7 +1,7 @@
 {
   "name": "homebridge-cbus-v2",
   "author": "pktechnology",
-  "version": "2.4.20",
+  "version": "2.4.21",
   "description": "Homebridge v2 compatible C-Bus / Clipsal C-Gate platform plugin",
   "main": "index.js",
   "license": "MIT",
@@ -54,7 +54,7 @@
   },
   "devDependencies": {},
   "scripts": {
-    "test": "npm run validate",
+    "test": "node --test && npm run validate",
     "validate": "node scripts/validate-package.js"
   },
   "homebridge": {

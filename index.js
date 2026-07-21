@@ -11,6 +11,7 @@ const CGateClient = require(`./lib/cgate-client.js`);
 const CGateDatabase = require(`./lib/cgate-database.js`);
 const CGateExport = require(`./lib/cgate-export.js`);
 const DiscoveryCache = require('./lib/discovery-cache.js');
+const AccessoryConfig = require('./lib/accessory-config.js');
 
 const CBusNetId = require(`./lib/cbus-netid.js`);
 
@@ -230,7 +231,7 @@ CBusPlatform.prototype._normaliseDiscoveredAccessoryConfig = function (config) {
 
 	return {
 		type: config.type || this.config.discoveryDefaultType || 'light',
-		id: typeof config.id === 'undefined' ? undefined : String(config.id),
+		id: AccessoryConfig.normaliseGroupId(config.id),
 		name: config.name,
 		enabled: config.enabled !== false,
 		network: config.network,
@@ -253,7 +254,7 @@ CBusPlatform.prototype._createConfiguredDiscoveredAccessoryConfigs = function ()
 	for (const config of discoveredAccessories) {
 		const normalisedConfig = this._normaliseDiscoveredAccessoryConfig(config);
 
-		if (!normalisedConfig || !normalisedConfig.id || !normalisedConfig.name || !normalisedConfig.type) {
+		if (!AccessoryConfig.hasGroupId(normalisedConfig) || !normalisedConfig.name || !normalisedConfig.type) {
 			log(`Skipping invalid discovered accessory config: ${JSON.stringify(config)}`);
 			continue;
 		}
@@ -341,7 +342,7 @@ CBusPlatform.prototype._createAccessories = function () {
 	const seenKeys = new Set();
 
 	for (let config of combinedAccessoryConfigs) {
-		if (!config || !config.type || !config.id || !config.name) {
+		if (!AccessoryConfig.hasGroupId(config) || !config.type || !config.name) {
 			log(`Skipping invalid accessory config: ${JSON.stringify(config)}`);
 			continue;
 		}
