@@ -1,7 +1,12 @@
 # Changelog
 
-## Unreleased
+## 2.4.24
 
+- Fixed accessories being removed from HomeKit (losing room assignments and breaking automations) when C-Gate was unreachable at startup; accessories now always register from the config and come alive when the connection is established.
+- Fixed the C-Gate client never retrying when the very first connection attempt failed; it now retries with backoff until C-Gate becomes available.
+- Enabled TCP keepalive on the C-Gate connection so silently dropped connections (such as the C-Gate host losing power) are detected and reconnected.
+- Deferred the C-Gate database load so it runs (and retries on reconnect) in the background without blocking accessory registration.
+- Kept the existing discovery cache instead of overwriting it when C-Gate reports no groups, such as while the C-Bus network is powering up.
 - Added a C-Gate settings test in the Homebridge custom UI.
 - Added package validation and GitHub Actions checks.
 - Restored the MIT license text used by the package metadata.

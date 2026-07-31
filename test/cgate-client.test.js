@@ -62,6 +62,45 @@ test('fails a connection that never completes the C-Gate handshake', async () =>
 	await close(server);
 });
 
+test('retries the initial connection until C-Gate becomes available', async () => {
+	// find a free port, then close the listener so the first attempt is refused
+	let server = net.createServer(() => {});
+	const port = await listen(server);
+	await close(server);
+
+	const client = new CGateClient('127.0.0.1', port, 'TEST', 254, 56, false);
+	client._getBackoff = () => 0.01;
+
+	const connected = new Promise(resolve => {
+		client.on('status', status => {
+			if (status.state === 'connected') {
+				resolve();
+			}
+		});
+	});
+
+	const error = await new Promise(resolve => client.connect(resolve));
+	assert.ok(error, 'initial connection attempt should fail');
+
+	server = net.createServer(socket => {
+		socket.write('201 Service ready: Clipsal C-Gate Version: v4.12.0 (build 1234) #cmd-syntax=1.0\r\n');
+		socket.on('data', data => {
+			if (String(data).includes('events e8s0c0')) {
+				socket.write('[99] 200 OK.\r\n');
+			}
+		});
+	});
+	await new Promise((resolve, reject) => {
+		server.once('error', reject);
+		server.listen(port, '127.0.0.1', resolve);
+	});
+
+	await connected;
+	assert.equal(client.connectionReady, true);
+	client.disconnect();
+	await close(server);
+});
+
 test('times out pending commands and removes them from the queue', async () => {
 	const client = new CGateClient('127.0.0.1', 20023, 'TEST', 254, 56, false);
 	client.connectionReady = true;

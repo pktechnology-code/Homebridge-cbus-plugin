@@ -83,6 +83,8 @@ function CBusPlatform(ignoredLog, config, api) {
 	this.registeredAccessories = undefined;
 	this.client = undefined;
 	this.database = undefined;
+	this.databaseLoaded = false;
+	this.databaseFetchInFlight = false;
 
 	if (typeof this.config.client_ip_address === `undefined`) {
 		throw new Error('client_ip_address is required');
@@ -122,9 +124,10 @@ CBusPlatform.prototype._processEvent = function (message) {
 		let output;
 
 		const accessory = this.registeredAccessories ? this.registeredAccessories[message.netId.toString()] : undefined;
+		const databaseLoaded = Boolean(this.database && this.database.isLoaded());
 
 		if (EventUtils.shouldLogLevelEvent(message)) {
-			const tag = this.database ? this.database.getTag(message.netId) : `NYI`;
+			const tag = databaseLoaded ? this.database.getTag(message.netId) : `NYI`;
 
 			if (accessory) {
 				output = `${chalk.red.bold(accessory.name)} (${accessory.type}) set to level ${message.level}%`;
@@ -133,7 +136,7 @@ CBusPlatform.prototype._processEvent = function (message) {
 			}
 		}
 
-		if (message.sourceUnit && this.database) {
+		if (message.sourceUnit && databaseLoaded) {
 			const sourceId = new CBusNetId(this.project, this.network, `p`, message.sourceUnit);
 			const source = this.database.getNetworkEntity(sourceId);
 
@@ -175,19 +178,54 @@ CBusPlatform.prototype.accessories = function (callback) {
 		this._processEvent(message);
 	}.bind(this));
 
-	this.client.connect(function (err) {
-		if (err) {
-			log(`C-Gate connection failed: ${err.message || err}`);
-			callback([]);
+	// the accessory list must always be built from the config, even when C-Gate
+	// is unreachable -- registering an empty list would remove the accessories
+	// from HomeKit, wiping their room assignments and breaking automations
+	let registered = false;
+	const registerAccessories = () => {
+		if (registered) {
 			return;
 		}
+		registered = true;
 
-		this.database.fetch(this.client, fetchErr => {
-			if (fetchErr) {
-				log(`Failed to fetch C-Gate database: ${fetchErr.message || fetchErr}`);
-				callback([]);
-				return;
-			}
+		const accessories = this._createAccessories();
+
+		this.registeredAccessories = {};
+		for (const accessory of accessories) {
+			this.registeredAccessories[accessory.netId.toString()] = accessory;
+		}
+
+		log('Registering the accessories list…');
+		callback(accessories);
+	};
+
+	this.client.on(`status`, status => {
+		if (status.state === `connected` && !this.databaseLoaded && !this.databaseFetchInFlight) {
+			this._loadDatabase(registerAccessories);
+		}
+	});
+
+	this.client.connect(err => {
+		if (err) {
+			log(`C-Gate connection failed: ${err.message || err}. Registering accessories from config; connection retries continue in the background.`);
+			registerAccessories();
+		}
+
+		// on success, the 'connected' status event triggers the database load,
+		// which registers the accessories once tags are available
+	});
+};
+
+CBusPlatform.prototype._loadDatabase = function (done) {
+	this.databaseFetchInFlight = true;
+
+	this.database.fetch(this.client, fetchErr => {
+		this.databaseFetchInFlight = false;
+
+		if (fetchErr) {
+			log(`Failed to fetch C-Gate database: ${fetchErr.message || fetchErr}`);
+		} else {
+			this.databaseLoaded = true;
 
 			const stats = this.database.getStats();
 			log(`Successfully fetched ${stats.numApplications} applications, ${stats.numGroups} groups and ${stats.numUnits} units from C-Gate.`);
@@ -206,23 +244,21 @@ CBusPlatform.prototype.accessories = function (callback) {
 
 					const result = DiscoveryCache.writeDiscoveryCache(this);
 
-					log(`Wrote C-Bus discovery cache with ${result.totalGroups} groups to ${result.path}`);
+					if (result.skipped) {
+						log(`Kept existing C-Bus discovery cache at ${result.path}; C-Gate returned no groups.`);
+					} else {
+						log(`Wrote C-Bus discovery cache with ${result.totalGroups} groups to ${result.path}`);
+					}
 				} catch (err) {
 					log(`Failed to write C-Bus discovery cache: ${err}`);
 				}
 			}
+		}
 
-			const accessories = this._createAccessories();
-
-			this.registeredAccessories = {};
-			for (const accessory of accessories) {
-				this.registeredAccessories[accessory.netId.toString()] = accessory;
-			}
-
-			log('Registering the accessories list…');
-			callback(accessories);
-		});
-	}.bind(this));
+		if (typeof done === 'function') {
+			done();
+		}
+	});
 };
 
 CBusPlatform.prototype._normaliseDiscoveredAccessoryConfig = function (config) {
